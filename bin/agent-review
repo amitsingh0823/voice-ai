@@ -146,6 +146,26 @@ def candidate_diff(root: Path, base: str, working_tree: bool) -> tuple[str, str]
     )
 
 
+def candidate_digest(raw_diff: str) -> str:
+    return hashlib.sha256(raw_diff.encode("utf-8")).hexdigest()
+
+
+def ensure_candidate_unchanged(
+    initial_boundary: str,
+    initial_diff: str,
+    final_boundary: str,
+    final_diff: str,
+    initial_status: str,
+    final_status: str,
+) -> None:
+    if final_status != initial_status:
+        raise RuntimeError("candidate changed while reviewers were running")
+    if initial_boundary != final_boundary or candidate_digest(initial_diff) != candidate_digest(
+        final_diff
+    ):
+        raise RuntimeError("candidate bytes changed while reviewers were running")
+
+
 def review_prompt(boundary: str, filtered_diff: str) -> str:
     return f"""You are an independent, read-only code reviewer.
 Review boundary: {boundary}
@@ -355,15 +375,22 @@ def main() -> int:
                 raise ValueError("egress filtering removed candidate content; a complete automated review is not possible")
             prompt_path.write_text(review_prompt(boundary, safe_diff), encoding="utf-8")
             reviews = [run_reviewer(root, reviewer, prompt_path, args.allow_external) for reviewer in reviewers]
+        final_boundary, final_diff = candidate_diff(root, args.base, args.working_tree)
         final_status = command_output(root, ["git", "status", "--porcelain=v1", "--untracked-files=all"])
-        if final_status != initial_status:
-            raise RuntimeError("candidate changed while reviewers were running; discard the review and inspect the worktree")
+        ensure_candidate_unchanged(
+            boundary,
+            raw_diff,
+            final_boundary,
+            final_diff,
+            initial_status,
+            final_status,
+        )
         report: dict[str, object] = {
             "version": 1,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "boundary": boundary,
             "risk": args.risk,
-            "diff_sha256": hashlib.sha256(raw_diff.encode("utf-8")).hexdigest(),
+            "diff_sha256": candidate_digest(raw_diff),
             "egress": egress_manifest,
             "decision": panel_decision(reviews),
             "reviews": reviews,

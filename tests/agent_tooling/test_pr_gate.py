@@ -29,6 +29,12 @@ class PullRequestGateTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("cannot safely inspect", result.stderr)
 
+    def test_nested_publish_after_visible_call_fails_closed(self) -> None:
+        command = "gh pr ready && bash -c 'gh pr create --body-file pr.md --title chore:test'"
+        result = run_hook(".claude/hooks/pr_gate.py", command)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("cannot safely inspect", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

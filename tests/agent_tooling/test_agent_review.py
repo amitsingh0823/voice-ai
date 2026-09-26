@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sys
 import tempfile
 import unittest
@@ -77,6 +76,17 @@ class AgentReviewTest(unittest.TestCase):
     def test_example_configuration_is_valid_but_disabled(self) -> None:
         reviewers = review.load_reviewers(ROOT / "agent-reviewers.example.json")
         self.assertEqual(reviewers, [])
+
+    def test_candidate_bytes_must_not_change_when_status_is_stable(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "candidate bytes"):
+            review.ensure_candidate_unchanged(
+                "main...HEAD",
+                "diff before",
+                "main...HEAD",
+                "diff after",
+                " M existing.py",
+                " M existing.py",
+            )
 
 
 if __name__ == "__main__":

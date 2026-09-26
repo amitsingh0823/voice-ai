@@ -134,9 +134,9 @@ def main() -> int:
         return 0
 
     calls = invocations(command)
+    if len(GATED_COMMAND.findall(command)) != len(calls):
+        block("cannot safely inspect a nested or indirect pull request command")
     if not calls:
-        if GATED_COMMAND.search(command):
-            block("cannot safely inspect a nested or indirect pull request command")
         return 0
     root = repository_root()
     cwd = Path((payload.get("tool_input") or {}).get("cwd") or root).resolve()

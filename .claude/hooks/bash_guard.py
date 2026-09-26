@@ -98,6 +98,28 @@ def is_existing_tag(cwd: str, spec: str) -> bool:
     return result.returncode == 0
 
 
+def is_commitish(cwd: str, value: str) -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"{value}^{{commit}}"],
+            cwd=cwd or None,
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
+
+
+def has_short_flag(flags: list[str], option: str) -> bool:
+    return any(
+        flag.startswith("-") and not flag.startswith("--") and option in flag[1:]
+        for flag in flags
+    )
+
+
 def check_git(arguments: list[str], cwd: str, command: str) -> None:
     index = 0
     while index < len(arguments) and arguments[index].startswith("-"):
@@ -150,10 +172,23 @@ def check_git(arguments: list[str], cwd: str, command: str) -> None:
         reject("git reset --hard discards work", command)
     if action == "clean" and any(item == "--force" or re.match(r"^-[A-Za-z]*f", item) for item in flags):
         reject("git clean deletes untracked work", command)
-    if action == "checkout" and "--" in rest:
-        reject("git checkout with a path discards work", command)
-    if action == "restore" and "--staged" not in flags and "-S" not in flags:
-        reject("git restore may discard work", command)
+    if action == "checkout":
+        if "--" in rest or any(item in flags for item in ("-f", "--force", "-B")):
+            reject("git checkout may discard work", command)
+        creates_branch = "-b" in flags or "--branch" in flags
+        if not creates_branch and (
+            len(positional) != 1 or not is_commitish(cwd, positional[0])
+        ):
+            reject("git checkout with a path may discard work", command)
+    if action == "restore":
+        has_staged = "--staged" in flags or has_short_flag(flags, "S")
+        has_worktree = "--worktree" in flags or has_short_flag(flags, "W")
+        if not has_staged or has_worktree:
+            reject("git restore may discard work", command)
+    if action == "switch" and any(
+        item in flags for item in ("-f", "--force", "--discard-changes", "-C")
+    ):
+        reject("git switch may discard work", command)
     if action == "branch" and any(item in {"-d", "-D", "--delete"} for item in flags):
         reject("branch deletion is not an agent action", command)
     if action == "stash":
@@ -208,8 +243,34 @@ def check_segment(words: list[str], pipe_source: list[str] | None, cwd: str, com
     if program in EGRESS_PROGRAMS:
         reject(f"unfiltered network transfer via {program}", command)
     if program == "curl" and any(
-        item in {"-d", "--data", "--data-ascii", "--data-binary", "--data-raw", "--form", "-F", "--json", "-T", "--upload-file"}
-        or item.startswith(("--data=", "--data-ascii=", "--data-binary=", "--data-raw=", "--form=", "--json=", "--upload-file="))
+        item
+        in {
+            "-d",
+            "--data",
+            "--data-ascii",
+            "--data-binary",
+            "--data-raw",
+            "--data-urlencode",
+            "--form",
+            "--form-string",
+            "-F",
+            "--json",
+            "-T",
+            "--upload-file",
+        }
+        or item.startswith(
+            (
+                "--data=",
+                "--data-ascii=",
+                "--data-binary=",
+                "--data-raw=",
+                "--data-urlencode=",
+                "--form=",
+                "--form-string=",
+                "--json=",
+                "--upload-file=",
+            )
+        )
         or re.match(r"^-(?:d|F|T).+", item)
         for item in arguments
     ):

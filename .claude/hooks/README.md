@@ -17,7 +17,7 @@ hidden tests can trap agents in repeated completion attempts.
 - If UI source changes under `ui/src/`, at least one UI unit test change is required.
 - If backend Go source changes under `api/`, `pkg/`, or `cmd/`, at least one `*_test.go` change is required.
 - When explicitly finalized, required tests are executed:
-  - `cd ui && CI=true yarn test providers --watch=false --runInBand` for UI changes
+  - changed focused UI test files with `CI=true` for UI changes
   - `go test ./<changed-go-package-dir>` for backend changes
 
 Run validation once with an explicit file scope:

@@ -34,5 +34,25 @@ class CommitMessageHookTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
 
 
+class PullRequestReadinessTest(unittest.TestCase):
+    def test_no_diff_boundary_does_not_block_push(self) -> None:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+            text=True,
+        ).stdout.strip()
+        result = subprocess.run(
+            [str(ROOT / "bin/agent-pr-ready"), head],
+            cwd=ROOT,
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("checks are not required", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

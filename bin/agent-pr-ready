@@ -17,8 +17,8 @@ revision_range="${merge_base}...HEAD"
 changed_list="$(git diff --name-only --diff-filter=ACMR "$revision_range")"
 
 if [[ -z "$changed_list" ]]; then
-  echo "PR gate: no committed changes relative to $base_ref" >&2
-  exit 1
+  echo "No committed changes relative to $base_ref. PR readiness checks are not required."
+  exit 0
 fi
 
 python3 bin/check-agent-style --range "$revision_range"

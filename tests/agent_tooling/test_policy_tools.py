@@ -97,6 +97,35 @@ class EgressFilterTest(unittest.TestCase):
         self.assertIn("file withheld", filtered)
         self.assertEqual(len(manifest["withheld"]), 1)
 
+    def test_allows_deleted_file_diff_when_source_no_longer_exists(self) -> None:
+        path = "tests/agent_tooling/deleted-egress-fixture.py"
+        source = "\n".join(
+            [
+                f"diff --git a/{path} b/{path}",
+                "deleted file mode 100644",
+                f"--- a/{path}",
+                "+++ /dev/null",
+                "-print('deleted')",
+            ]
+        )
+        filtered, manifest = egress.filter_diff(ROOT, source)
+        self.assertIn("-print('deleted')", filtered)
+        self.assertEqual(manifest["withheld"], [])
+
+    def test_withholds_deleted_sensitive_file_diff(self) -> None:
+        source = "\n".join(
+            [
+                "diff --git a/ui/.env.production b/ui/.env.production",
+                "deleted file mode 100644",
+                "--- a/ui/.env.production",
+                "+++ /dev/null",
+                "-TOKEN=abcdefgh12345678",
+            ]
+        )
+        filtered, manifest = egress.filter_diff(ROOT, source)
+        self.assertIn("file withheld", filtered)
+        self.assertEqual(len(manifest["withheld"]), 1)
+
 
 class StyleCheckTest(unittest.TestCase):
     def test_rejects_em_dash_in_prose(self) -> None:
@@ -111,10 +140,33 @@ class StyleCheckTest(unittest.TestCase):
 class RequiredTestSelectionTest(unittest.TestCase):
     def test_ui_tests_run_non_interactively(self) -> None:
         self.assertEqual(
-            required_tests.UI_TEST_COMMAND,
-            ["yarn", "test", "providers", "--watch=false", "--runInBand"],
+            required_tests._ui_test_command(
+                [
+                    "ui/src/components/Auth.tsx",
+                    "ui/src/components/Auth.test.tsx",
+                ]
+            ),
+            [
+                "yarn",
+                "test",
+                "--watch=false",
+                "--runInBand",
+                "src/components/Auth.test.tsx",
+            ],
         )
         self.assertEqual(required_tests.UI_TEST_ENV, {"CI": "true"})
+
+    def test_ui_test_selection_does_not_substitute_provider_tests(self) -> None:
+        command = required_tests._ui_test_command(
+            [
+                "ui/src/components/Auth.tsx",
+                "ui/src/components/Auth.test.tsx",
+                "ui/src/providers/openai/provider.test.tsx",
+            ]
+        )
+        self.assertIn("src/components/Auth.test.tsx", command or [])
+        self.assertIn("src/providers/openai/provider.test.tsx", command or [])
+        self.assertNotIn("providers", command or [])
 
     def test_ignores_generated_ui_policy_files(self) -> None:
         self.assertFalse(required_tests._is_ui_source("ui/src/AGENTS.md"))
