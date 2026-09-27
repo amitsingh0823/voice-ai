@@ -253,7 +253,7 @@ mkdir -p "$output_dir/run-worktree/rfcs"
 if (
   cd "$output_dir/run-worktree"
   ORCA_CLI_COMMAND="$run_mock" ORCA_RUN_LOG="$run_log" \
-    bash "$repo_root/bin/orca-development-run" "historical number" codex rfcs/0015-new-format.md \
+    bash "$repo_root/bin/orca-development-run" "historical number" codex rfcs/0016-new-format.md \
     >/dev/null 2>&1
 ); then
   echo "Historical RFC number unexpectedly succeeded." >&2

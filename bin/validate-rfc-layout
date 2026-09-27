@@ -36,7 +36,7 @@ REQUIRED_RISK_AREAS = (
 REQUIRED_RFC_METADATA = ("Status", "Owner", "Approved by", "Date", "Supersedes")
 ACCEPTED_STATUSES = {"Accepted", "Implemented", "Superseded"}
 VALID_STATUSES = {"Draft", "Accepted", "Implemented", "Superseded", "Rejected"}
-LAYERED_RFC_START = 16
+LAYERED_RFC_START = 17
 RFC_NAME = re.compile(r"^(\d{4})-[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?\.md$")
 PLACEHOLDER_VALUES = {"", "pending", "tbd", "todo", "team or individual", "yyyy-mm-dd"}
 

@@ -17,11 +17,9 @@ images once, then promote those same artifacts to `dev` or `production` without 
 Reorder independent validation jobs and reuse Docker build caches so a warm-cache full CI
 run completes in under 30 minutes without reducing coverage.
 
-The layout follows the useful boundary in the opencode reference at commit
-`a42f393c850bec0c0f395fb91bf19b1ee8b31666`: validation, publication, containers, and
-deployment have distinct entry points and deployment uses a GitHub Environment. This RFC
-does not copy its repository-specific credentials, broad permissions, dynamic environment
-selection, or unrelated workflows.
+The design gives validation, publication, containers, and deployment distinct entry
+points, with deployment scoped through a GitHub Environment. It avoids broad permissions,
+dynamic environment selection, and unrelated workflows.
 
 Deployment remains blocked while this RFC is Draft. The repository has no verified runtime
 target, deploy command, health check, rollback command, `dev` or `production` Environment,
@@ -66,8 +64,7 @@ The current workflow graph mixes trust and release timing:
   per-service cache created by Docker validation or a preceding CI run.
 
 This is a Governed change because it defines credential boundaries and production rollout
-behavior. The authoritative proposed plan is
-`rfcs/0016-github-actions-deployment/jsons/plan.json` at the baseline commit
+behavior. This RFC contains the authoritative proposed design at the baseline commit
 `80a98d8c7dbf840e6fa38094f9c022164816a9e0`.
 
 ## Goals
@@ -98,7 +95,7 @@ behavior. The authoritative proposed plan is
 - New cloud infrastructure or restoration of the removed Azure deployment.
 - A registry migration, custom GitHub App, generic workflow generator, or multi-cloud
   deployment framework.
-- Splitting the integrated CI graph merely to copy opencode workflow names.
+- Splitting the integrated CI graph merely to mirror another workflow layout.
 - `pull_request_target`, deploy-time builds, automatic production deployment, or dynamic
   GitHub Environment names.
 - Automated deletion of tags, releases, container digests, deployment history, or
@@ -136,7 +133,6 @@ behavior. The authoritative proposed plan is
 - `README.md`: operator-facing publication, environment, verification, and rollback
   documentation.
 - `rfcs/0016-github-actions-deployment.md`: this RFC.
-- `rfcs/0016-github-actions-deployment/jsons/**`: governed lifecycle artifacts.
 
 ### Out-of-Scope Paths
 
@@ -213,8 +209,8 @@ write permission, publish step, or environment.
 ### CI Performance and Stage Graph
 
 Keep the numbered job names as the visual CI stages. Do not add a deployment `stage`
-input to validation workflows. In the opencode reference, `stage` selects infrastructure
-such as `dev` or `production`; it is not a CI ordering mechanism.
+input to validation workflows. Environment names such as `dev` and `production` select
+deployment infrastructure; they are not CI ordering mechanisms.
 
 The optimized full-validation graph is:
 
@@ -501,7 +497,7 @@ deployable through the new workflow.
 ## Rollout
 
 Rollout cannot begin until all blocking Open Questions are resolved, this RFC is revised,
-independently challenged, marked `Accepted`, and approved through the exact-digest gate.
+independently challenged, marked `Accepted`, and approved by the responsible owner.
 
 After approval:
 
@@ -543,9 +539,8 @@ window, and escalation owner must be added before this RFC can be accepted.
 
 ## Alternatives Considered
 
-- Copy the opencode workflow set and permissions: rejected because most workflows,
-  credentials, and broad permissions are repository-specific. Only the trust-boundary
-  layout is relevant.
+- Copy a generic workflow set and permissions: rejected because workflows, credentials,
+  and broad permissions must follow this repository's trust boundaries.
 - Split every current CI area into independent top-level workflows: rejected because the
   integrated graph already provides one stable required conclusion and ordering.
 - Keep `docker-publish.yml` and `tag-and-package-services.yml` as independent publishers:
@@ -667,17 +662,13 @@ target decisions are resolved. Their absence blocks acceptance and implementatio
 
 Pending independent challenge. No challenge revision cycle has been consumed. The RFC
 must remain `Draft` while any blocking Open Question lacks owner confirmation. Before a
-final challenge approval, the exact challenged bytes will contain the sole metadata line
-`- Status: Accepted`; any later byte change requires a new challenge and exact-digest gate.
-
-## Artifact Index
-
-- `jsons/plan.json`: authoritative proposed plan and repository evidence; decision pending.
+final approval, record the reviewer or owner decision and set the sole metadata line to
+`- Status: Accepted`. A later material decision change requires a superseding RFC.
 
 ## Decision Log
 
 | Date | Decision | Owner | Evidence |
 | --- | --- | --- | --- |
-| 2026-09-27 | Preserve integrated CI but separate validation, publication, and deployment trust boundaries | Task planner | `jsons/plan.json` |
-| 2026-09-27 | Use the build tag and prerelease as the source record and image digests as deployment identity | Task planner | `jsons/plan.json` |
-| 2026-09-27 | Keep deployment manual and blocked until exact target and recovery contracts are approved | Task planner | `jsons/plan.json` |
+| 2026-09-27 | Preserve integrated CI but separate validation, publication, and deployment trust boundaries | Task planner | RFC context and design |
+| 2026-09-27 | Use the build tag and prerelease as the source record and image digests as deployment identity | Task planner | RFC context and design |
+| 2026-09-27 | Keep deployment manual and blocked until exact target and recovery contracts are approved | Task planner | RFC context and design |

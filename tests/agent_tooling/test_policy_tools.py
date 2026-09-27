@@ -74,7 +74,7 @@ class PullRequestBodyTest(unittest.TestCase):
         self.assertIn("Governed work must identify the accepted RFC", failures)
         self.assertIn("Governed work must identify the RFC approval", failures)
 
-        body = body.replace("- Accepted RFC: N/A", "- Accepted RFC: rfcs/0016-example.md")
+        body = body.replace("- Accepted RFC: N/A", "- Accepted RFC: rfcs/0017-example.md")
         body = body.replace("- Approval: N/A", "- Approval: approved by platform owner")
         self.assertEqual(pr_body.validate_body(body), [])
 

@@ -17,8 +17,8 @@ fi
 
 rfc_number="${rfc_path#rfcs/}"
 rfc_number="${rfc_number%%-*}"
-if (( 10#$rfc_number < 16 )); then
-  echo "New RFC numbers must be 0016 or later; earlier RFCs use the historical format." >&2
+if (( 10#$rfc_number < 17 )); then
+  echo "New RFC numbers must be 0017 or later; earlier RFCs use the historical format." >&2
   exit 2
 fi
 

@@ -59,7 +59,7 @@ class RFCLayoutTests(unittest.TestCase):
         return text
 
     def test_complete_accepted_rfc_passes(self):
-        (self.rfc_root / "0016-example.md").write_text(
+        (self.rfc_root / "0017-example.md").write_text(
             self.accepted_rfc(), encoding="utf-8"
         )
 
@@ -72,7 +72,7 @@ class RFCLayoutTests(unittest.TestCase):
             "| Security and privacy | N/A: no change to this area |",
             "| Security and privacy | |",
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -84,7 +84,7 @@ class RFCLayoutTests(unittest.TestCase):
             "| Data and migration | N/A: no change to this area |",
             "| Data and migration | N/A |",
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -95,7 +95,7 @@ class RFCLayoutTests(unittest.TestCase):
         text = self.accepted_rfc().replace(
             "- Open questions: None", "- Open questions: migration owner"
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -106,7 +106,7 @@ class RFCLayoutTests(unittest.TestCase):
         text = self.accepted_rfc().replace(
             "- Approved by: Reviewer", "- Approved by: Pending"
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -118,7 +118,7 @@ class RFCLayoutTests(unittest.TestCase):
             "- Approval reference: pull request review",
             "- Approval reference: Pending",
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -129,7 +129,7 @@ class RFCLayoutTests(unittest.TestCase):
         text = self.accepted_rfc().replace(
             "- Owner: Platform", "- Owner: Team or individual"
         )
-        (self.rfc_root / "0016-example.md").write_text(text, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(text, encoding="utf-8")
 
         result = self.run_validator()
 
@@ -137,15 +137,15 @@ class RFCLayoutTests(unittest.TestCase):
         self.assertIn("must name its owner before acceptance", result.stderr)
 
     def test_draft_rfc_allows_incomplete_review_fields(self):
-        (self.rfc_root / "0016-example.md").write_text(TEMPLATE, encoding="utf-8")
+        (self.rfc_root / "0017-example.md").write_text(TEMPLATE, encoding="utf-8")
 
         result = self.run_validator()
 
         self.assertEqual(0, result.returncode, result.stderr)
 
     def test_historical_rfc_format_is_grandfathered(self):
-        (self.rfc_root / "0015-historical.md").write_text(
-            "# RFC 0015: Historical\n\n- Status: Accepted\n", encoding="utf-8"
+        (self.rfc_root / "0016-historical.md").write_text(
+            "# RFC 0016: Historical\n\n- Status: Accepted\n", encoding="utf-8"
         )
 
         result = self.run_validator()

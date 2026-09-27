@@ -36,7 +36,7 @@ reasoned `N/A` for compatibility, failure recovery, security, data, concurrency,
 operations. Keep file-level scope, task breakdown, and execution evidence in the plan or
 pull request.
 
-The layered format is enforced for RFC 0016 and later. Earlier RFCs retain their accepted
+The layered format is enforced for RFC 0017 and later. Earlier RFCs retain their accepted
 structure and are not rewritten solely to match the current template.
 
 ## Approval Record
