@@ -1,0 +1,242 @@
+{
+  "rfc": "rfcs/0016-github-actions-deployment.md",
+  "status": "proposed",
+  "decision": "pending",
+  "lifecycle_tier": "Governed",
+  "objective": "Separate credential-free validation, trusted artifact publication, and guarded deployment. Publish immutable release assets and container digests from an exact successfully validated commit, then deploy those same artifacts through dev and production GitHub Environments with verification and rollback.",
+  "context": {
+    "baseline": {
+      "workspace": "/Users/prashant.srivastav/orca/workspaces/voice-ai/main",
+      "branch": "feat/github-action-deployment",
+      "commit": "80a98d8c7dbf840e6fa38094f9c022164816a9e0"
+    },
+    "reference": "/Users/prashant.srivastav/Documents/codes/lexatic/wip/opencode at a42f393c850bec0c0f395fb91bf19b1ee8b31666",
+    "verified_findings": [
+      "Fork PR 220 run 32102080769 and fork PR 205 run 32180660653 failed at an unconditional Docker Hub login step.",
+      "Current main already fixes that specific regression: docker-build logs in only when push is true and reusable-docker-ci sets push to false.",
+      "ci.yml still uses secrets: inherit for Go and UI only to expose optional Codecov credentials.",
+      "docker-publish.yml runs independently on pushes and rebuilds mutable latest, date, and short-SHA tags without waiting for the matching CI result.",
+      "tag-and-package-services.yml already validates a successful same-repository main push and creates immutable build tags, but package.yml can overwrite existing release assets with --clobber.",
+      "The repository has only a main branch. Existing develop and saas workflow triggers do not correspond to current upstream branches.",
+      "The GitHub Environments API reports only the unprotected copilot environment. Dev and production environments do not exist.",
+      "build-aws-ami.yml has failed after every recent successful image publish because AWS credentials are unavailable. Both marketplace workflows reference deploy paths that are absent from the repository.",
+      "The opencode reference separates validation, publishing, containers, and deployment, scopes deployment through a GitHub Environment, and uses OIDC. Its repository-specific secrets and broad permissions must not be copied.",
+      "Three recent successful full CI runs took 52 minutes 45 seconds, 54 minutes 24 seconds, and 60 minutes 19 seconds. Independent Docker, assistant native, integration, smoke, flow, and telephony work is serialized.",
+      "End-to-end cache scopes contain the run ID, so they cannot reuse the stable per-service Docker validation cache or a preceding run."
+    ]
+  },
+  "acceptance_criteria": [
+    "Every pull_request validation path succeeds when repository and environment secrets are unavailable.",
+    "No PR-reachable workflow inherits secrets, logs in to a registry, publishes externally, or targets a GitHub Environment.",
+    "A focused workflow contract test preserves the fork regression fix by checking push=false for Docker validation and conditional registry validation and login.",
+    "Continuous Integration remains the single required validation conclusion with the existing Go, UI, repository, Docker, native, and end-to-end coverage.",
+    "Three successful warm-cache full CI runs have a median duration under 30 minutes, documentation-only validation completes in under 5 minutes, and no current assertion is removed.",
+    "Automatic publication runs only after successful same-repository main push CI for the exact workflow_run.head_sha.",
+    "Manual publication accepts only a full SHA on main with a successful push CI run for that SHA.",
+    "Publication preserves the RFC 0012 build tag and five package contracts, refuses release asset conflicts, publishes full-SHA container tags, and records registry digests in images.json.",
+    "Deployment accepts only target dev or production plus an existing build tag, verifies checksums and image digests, and never rebuilds artifacts.",
+    "Deployment uses separate static dev and production jobs, non-cancelling per-environment concurrency, and environment-scoped identities.",
+    "Production requires a maintainer approval policy and a documented rollback to retained prior digests.",
+    "Only publication receives a namespace-limited Docker Hub identity. Deployment prefers OIDC with job-local id-token write permission.",
+    "Broken AWS and GCP marketplace workflows are removed from active Actions unless their missing sources, target, OIDC, verification, and rollback are approved in scope.",
+    "Workflow lint, policy contracts, local CI, a real fork PR, trusted and rejected publication cases, dev deployment, production approval behavior, and rollback rehearsal pass."
+  ],
+  "non_goals": [
+    "Application, API, UI, database, schema, authentication, Dockerfile, Compose, or provider behavior changes.",
+    "New cloud infrastructure or restoration of the removed Azure deployment.",
+    "Registry migration, a custom GitHub App, a generic workflow generator, or a multi-cloud deployment abstraction.",
+    "Splitting the integrated CI graph only to copy opencode file names.",
+    "pull_request_target, deploy-time rebuilds, automatic production deployment, or automated deletion of tags, releases, digests, or environment records."
+  ],
+  "allowed_paths": [
+    ".github/actions/docker-build/action.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/reusable-go-ci.yml",
+    ".github/workflows/reusable-ui-ci.yml",
+    ".github/workflows/reusable-repository-ci.yml",
+    ".github/workflows/reusable-docker-ci.yml",
+    ".github/workflows/reusable-assistant-native-ci.yml",
+    ".github/workflows/reusable-end-to-end-ci.yml",
+    ".github/workflows/package.yml",
+    ".github/workflows/publish.yml",
+    ".github/workflows/deploy.yml",
+    ".github/workflows/docker-publish.yml",
+    ".github/workflows/tag-and-package-services.yml",
+    ".github/workflows/build-aws-ami.yml",
+    ".github/workflows/build-gcp-image.yml",
+    "just/ci.just",
+    "just/ci-service-boundaries.sh",
+    "just/ci-github-actions.sh",
+    "README.md",
+    "rfcs/0016-github-actions-deployment.md",
+    "rfcs/0016-github-actions-deployment/jsons/**"
+  ],
+  "out_of_scope_paths": [
+    "api/**",
+    "cmd/**",
+    "pkg/**",
+    "ui/**",
+    "docker/**",
+    "docker-compose*.yml",
+    "env/**",
+    "config/**",
+    "protos/**",
+    "sdks/**",
+    ".github/workflows/docker-publish-base.yml",
+    "deploy/**"
+  ],
+  "ownership": {
+    "CI workflow implementer": "Fork-safe validation workflows and stable CI Complete status.",
+    "Publishing implementer": "Trusted source selection, immutable tags and assets, container digests, and replacement of duplicate publication entry points.",
+    "Deployment implementer": "Static environment gates and target-specific deploy, verify, and rollback behavior after the target decision.",
+    "Workflow contract implementer": "Executable trigger, secret, environment, digest, and workflow-name checks.",
+    "Documentation implementer": "Release, environment, verification, and rollback operator guidance.",
+    "Repository administrator": "GitHub Environment policies, required checks, narrowly scoped identities, reviewer configuration, and registry retention outside Git."
+  },
+  "principle_decisions": {
+    "KISS": [
+      "Keep the integrated CI and adopt only the reference repository's validation, publish, and deploy boundary.",
+      "Extend the existing build-tag prerelease with image digests instead of creating a second release database.",
+      "Use explicit dev and production jobs instead of a dynamic environment name."
+    ],
+    "YAGNI": [
+      "Do not add pull_request_target, deploy-time builds, automatic production, a registry migration, a custom GitHub App, or a generic deployment framework.",
+      "Do not copy broad workflow-level write permissions or repository-specific credentials from the reference repository."
+    ],
+    "source_of_truth": "The immutable Git build tag identifies source, its prerelease owns SHA256SUMS and images.json, images.json owns deployable image digests, and GitHub deployment history records environment selection.",
+    "compatibility": [
+      "Preserve the Continuous Integration and CI Complete names unless required checks are updated atomically.",
+      "Preserve build-YYYYMMDD-short-sha tags and the five RFC 0012 package names.",
+      "Keep required mutable image aliases temporarily only after consumer inventory, but never use them as deployment input."
+    ]
+  },
+  "workflow_contract": {
+    "validation": {
+      "entrypoint": ".github/workflows/ci.yml",
+      "events": [
+        "pull_request",
+        "push to main",
+        "workflow_dispatch"
+      ],
+      "permissions": "Read only",
+      "secrets": "None",
+      "result": "CI Complete for the exact SHA"
+    },
+    "publication": {
+      "entrypoint": ".github/workflows/publish.yml",
+      "automatic_source": "Successful Continuous Integration push from rapidaai/voice-ai main for the exact workflow_run.head_sha",
+      "manual_source": "Full main SHA with a successful push CI run for the exact SHA",
+      "artifacts": [
+        "Five service archives",
+        "SHA256SUMS",
+        "Five full-SHA container tags and digests",
+        "images.json"
+      ],
+      "immutability": "Tags cannot move, release assets cannot be overwritten, and deploy uses digests."
+    },
+    "deployment": {
+      "entrypoint": ".github/workflows/deploy.yml",
+      "event": "workflow_dispatch only until automation is separately approved",
+      "inputs": [
+        "target choice dev or production",
+        "existing build tag"
+      ],
+      "jobs": [
+        "deploy-dev with environment dev",
+        "deploy-production with environment production"
+      ],
+      "preconditions": [
+        "Tag and release match",
+        "SHA256SUMS passes",
+        "images.json source SHA matches",
+        "All image digests resolve",
+        "Target deploy, health, and rollback contract exists"
+      ],
+      "concurrency": "One non-cancelling run per environment"
+    }
+  },
+  "risks": [
+    {
+      "risk": "A workflow or job rename can remove a required branch-protection check.",
+      "mitigation": "Preserve names or update protection atomically and verify through the GitHub API."
+    },
+    {
+      "risk": "A privileged workflow_run can trust a fork or pull-request run.",
+      "mitigation": "Check conclusion, event, repository, branch, and SHA, and never consume PR artifacts."
+    },
+    {
+      "risk": "Reruns can mutate release assets or aliases.",
+      "mitigation": "Remove --clobber, compare checksums, use digest identity, and fail on conflict."
+    },
+    {
+      "risk": "No deployment target is present, so a generic deploy workflow could provide false assurance.",
+      "mitigation": "Keep exact deploy, health, and rollback commands as acceptance blockers."
+    },
+    {
+      "risk": "Environment configuration and registry retention can drift outside Git.",
+      "mitigation": "Document and verify API state before enabling deployment and during release audits."
+    },
+    {
+      "risk": "Concurrent deployment can mix versions or cancellation can leave a partial rollout.",
+      "mitigation": "Serialize each environment, never cancel in flight, and deploy one complete digest manifest."
+    }
+  ],
+  "open_questions": [
+    {
+      "question": "What runtime should deploy.yml update, and what exact deploy, health-check, and rollback commands prove success?",
+      "blocking": true
+    },
+    {
+      "question": "Should dev and production both promote published main builds, or should maintainers create protected branches?",
+      "blocking": true,
+      "recommended_default": "Manually promote an already published main build to either environment."
+    },
+    {
+      "question": "Who reviews production, and should self-review and administrator bypass be disabled?",
+      "blocking": true,
+      "recommended_default": "Require at least one maintainer, prevent self-review, disable administrator bypass, and restrict deployment to the default branch."
+    },
+    {
+      "question": "Are the broken AWS and GCP marketplace workflows obsolete?",
+      "blocking": true,
+      "recommended_default": "Remove them. Restoring either requires a separate governed design with sources and OIDC."
+    },
+    {
+      "question": "Can a namespace-limited Docker Hub robot token and rollback-length digest retention be provisioned?",
+      "blocking": true
+    },
+    {
+      "question": "Which consumers still require latest, date, short-SHA, or saas aliases?",
+      "blocking": false,
+      "recommended_default": "Keep documented aliases temporarily, but never deploy them."
+    }
+  ],
+  "verification_commands": [
+    "git diff --check",
+    "go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color",
+    "bash just/ci-github-actions.sh",
+    "just ci-check",
+    "just ci",
+    "just agent-finalize \"comma,separated,approved,paths\"",
+    "gh pr checks \"${FORK_PR_NUMBER:?set fork PR number}\" --repo rapidaai/voice-ai --watch --fail-fast",
+    "gh api repos/rapidaai/voice-ai/environments/dev",
+    "gh api repos/rapidaai/voice-ai/environments/production"
+  ],
+  "rollout": [
+    "Resolve the blocking deployment, environment, credential, and marketplace questions.",
+    "Land CI hardening first and verify a real fork PR.",
+    "Land publication consolidation and verify one main release while deployment stays disabled.",
+    "Create and audit dev and production environments and target identities.",
+    "Enable dev, capture current digests, deploy one build, verify health, and rehearse rollback.",
+    "Verify the production approval gate before the first production deployment.",
+    "Remove duplicate and stale entry points only after replacement evidence is retained."
+  ],
+  "rollback": "Disable publication or deployment, or revert the workflow reorganization, without deleting tags, assets, digests, or deployment records. Restore a runtime only through the same environment-gated workflow using a retained prior build manifest and the same health verification.",
+  "discussion": {
+    "planner_task": "task_61e8ffd87e0e",
+    "planner_dispatch": "ctx_9918b054fa6a",
+    "next_consumer": "RFC author",
+    "decision": "pending",
+    "instruction": "Resolve blocking questions, draft the RFC, and obtain independent challenge plus exact-digest confirmation before implementation."
+  }
+}

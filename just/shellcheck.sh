@@ -9,6 +9,7 @@ else
     just/ci-commitlint.sh
     just/ci-contracts.sh
     just/ci-go-lint.sh
+    just/ci-github-actions.sh
     just/ci-python.sh
     just/ci-security.sh
     just/ci-service-boundaries.sh
