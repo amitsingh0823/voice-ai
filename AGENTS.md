@@ -33,12 +33,13 @@ Use only for public API or protocol changes, authentication or authorization cha
 database/schema/data migrations, cross-service contracts, irreversible operations,
 high-risk production rollouts, or when an RFC is explicitly requested.
 
-Sequence: `understand -> plan -> draft RFC -> challenge -> confirm -> implement -> verify -> review -> ship`.
+Sequence: `understand -> plan -> draft RFC -> challenge -> approve -> implement -> verify -> review -> ship`.
 
-- Reserve an unused `rfcs/NNNN-short-name.md` path before drafting.
-- Start from `rfcs/TEMPLATE.md` and store all plan, amendment, challenge, confirmation, review, inventory, and operational JSON under `rfcs/NNNN-short-name/jsons/`.
-- The challenger approves only final bytes whose sole metadata status line is `- Status: Accepted`.
-- Implementation starts only after the exact-digest confirmation gate is approved.
+- Start from `rfcs/TEMPLATE.md` at an unused `rfcs/NNNN-short-name.md` path.
+- The RFC is a concise Markdown decision record. It must cover contracts, ownership, risks, rollout, rollback, and verification; keep file-level execution detail in the plan or pull request.
+- Implementation starts only after the RFC's sole metadata status line is `- Status: Accepted` and the required approval is recorded.
+- Every RFC risk-table row requires an impact statement or reasoned `N/A`, and open questions must be resolved before acceptance.
+- Do not rewrite an accepted decision. A material change requires a new accepted RFC whose `Supersedes` field points to the prior RFC.
 - Limit plan/RFC and implementation/review correction cycles to two. After two unsuccessful cycles, stop and escalate the unresolved decision instead of retrying.
 
 ### Verification

@@ -39,7 +39,9 @@ Choose the lightest safe workflow, establish a testable change contract, and rou
 ### Governed
 
 - Follow the complete workflow in `DEVELOPMENT_PROCESS.md`.
-- Reserve the RFC path and complete challenge plus exact-digest confirmation before implementation.
+- Select an unused RFC path and complete independent challenge plus reviewer or owner approval before implementation.
+- Require every RFC risk area to contain an impact statement or reasoned `N/A`, with no unresolved question at acceptance.
+- Treat an accepted RFC as a stable decision record. A material change requires a new RFC that supersedes it.
 - Preserve the approved scope, verification evidence, reviewer independence, and correction-round limits.
 
 ## Reclassification

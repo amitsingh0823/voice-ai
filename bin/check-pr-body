@@ -12,7 +12,7 @@ from pathlib import Path
 REQUIRED_SECTIONS = (
     "Summary",
     "Approved Plan",
-    "RFC Confirmation",
+    "RFC",
     "Principles",
     "Testing",
     "Independent Code Review",
@@ -100,7 +100,7 @@ def validate_body(body: str) -> list[str]:
 
     required_fields = {
         "Approved Plan": ("Acceptance criteria", "In scope", "Out of scope", "Ownership", "Rollback or disablement"),
-        "RFC Confirmation": ("Accepted RFC", "Confirmed SHA-256"),
+        "RFC": ("Accepted RFC", "Approval"),
         "Principles": (
             "KISS / smallest complete solution",
             "YAGNI / rejected speculation",
@@ -122,11 +122,11 @@ def validate_body(body: str) -> list[str]:
         failures.append("Checklist must retain the repository checklist")
 
     if tier_match is not None and tier_match.group(1) == "Governed":
-        rfc = visible_text(found["RFC Confirmation"])
+        rfc = visible_text(found["RFC"])
         if not re.search(r"(?m)^- Accepted RFC:\s*(?!N/A\s*$)\S+", rfc):
             failures.append("Governed work must identify the accepted RFC")
-        if not re.search(r"(?m)^- Confirmed SHA-256:\s*(?!N/A\s*$)[0-9a-fA-F]{64}\s*$", rfc):
-            failures.append("Governed work must include the confirmed RFC SHA-256")
+        if not re.search(r"(?m)^- Approval:\s*(?!N/A\s*$)\S+", rfc):
+            failures.append("Governed work must identify the RFC approval")
     return failures
 
 

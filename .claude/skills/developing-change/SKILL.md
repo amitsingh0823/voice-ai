@@ -14,7 +14,7 @@ Make the smallest complete change at the owning layer and leave a deterministic 
 - The lifecycle tier is known.
 - Acceptance criteria, allowed paths, risks, and exact verification commands are recorded.
 - Current behavior and ownership are understood.
-- Governed work has an accepted RFC and approved exact-digest confirmation.
+- Governed work has an accepted RFC with recorded reviewer or owner approval.
 - The matching integration skill is active when changing a provider boundary.
 
 ## Ownership
@@ -59,4 +59,4 @@ Provide `reviewing-change` with the intent, acceptance criteria, base and head o
 
 ## Governed lifecycle
 
-Implement only the confirmed Governed plan. Scope changes return to the coordinator, challenger, and confirmation gate. This skill must not verify or approve its own work.
+Implement only the accepted Governed plan. A material decision change returns to the coordinator and requires a superseding RFC, challenge, and approval. This skill must not verify or approve its own work.

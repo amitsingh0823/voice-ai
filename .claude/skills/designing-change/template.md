@@ -24,4 +24,4 @@
 
 ## Governed lifecycle
 
-- Challenge and confirmation status, or not applicable:
+- Challenge and approval status, or not applicable:

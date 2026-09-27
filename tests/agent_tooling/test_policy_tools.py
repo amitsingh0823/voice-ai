@@ -25,13 +25,10 @@ Adds repository policy checks.
 - Ownership: Repository tooling.
 - Rollback or disablement: Revert the tooling change.
 
-## RFC Confirmation
+## RFC
 
 - Accepted RFC: N/A
-- RFC artifact directory: N/A
-- Approved plan: N/A
-- Confirmed SHA-256: N/A
-- Orca confirmation gate / receipt: N/A
+- Approval: N/A
 
 ## Principles
 
@@ -70,6 +67,16 @@ class PullRequestBodyTest(unittest.TestCase):
     def test_rejects_empty_plan_field(self) -> None:
         body = VALID_BODY.replace("- Ownership: Repository tooling.", "- Ownership:")
         self.assertIn("Approved Plan must provide Ownership", pr_body.validate_body(body))
+
+    def test_governed_body_requires_rfc_approval(self) -> None:
+        body = VALID_BODY.replace("Standard", "Governed", 1)
+        failures = pr_body.validate_body(body)
+        self.assertIn("Governed work must identify the accepted RFC", failures)
+        self.assertIn("Governed work must identify the RFC approval", failures)
+
+        body = body.replace("- Accepted RFC: N/A", "- Accepted RFC: rfcs/0016-example.md")
+        body = body.replace("- Approval: N/A", "- Approval: approved by platform owner")
+        self.assertEqual(pr_body.validate_body(body), [])
 
 
 class EgressFilterTest(unittest.TestCase):

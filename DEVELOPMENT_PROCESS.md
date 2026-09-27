@@ -30,7 +30,7 @@ Use only for public API/protocol changes, authentication or authorization, schem
 migrations, cross-service contracts, irreversible operations, high-risk rollouts, or an
 explicitly requested RFC.
 
-`understand -> plan -> draft RFC -> challenge -> confirm -> implement -> verify -> review -> ship`
+`understand -> plan -> draft RFC -> challenge -> approve -> implement -> verify -> review -> ship`
 
 No agent may collapse planning, implementation, verification, and final code review into
 one self-approved action in the Governed tier.
@@ -128,35 +128,30 @@ Before implementation, the approved plan must contain:
 - Required test categories and exact verification commands.
 - Rollback, disablement, or migration strategy.
 - Plan challenge outcome and explicit approval.
-- Reserved RFC path and the exact accepted RFC SHA-256.
-- RFC confirmation gate receipt with Run, Task, Gate, question, resolution, and timestamps.
+- Accepted RFC path and its reviewer or owner approval.
 
-Create RFCs from `rfcs/TEMPLATE.md`. Keep the RFC Markdown at
-`rfcs/NNNN-short-name.md` and store every related JSON artifact under
-`rfcs/NNNN-short-name/jsons/`. The standard initial names are `plan.json`,
-`challenge.json`, and `confirmation.json`; use `amendment-NN-*.json` for later changes.
+Create RFCs from `rfcs/TEMPLATE.md` at an unused `rfcs/NNNN-short-name.md` path.
+The RFC is the concise, durable decision record. It captures context, the selected
+decision, contracts and ownership, rejected alternatives, consequences and risks,
+rollout and rollback, verification, challenge outcome, and approval. Every risk-table row
+requires an impact statement or reasoned `N/A`, and open questions must be resolved before
+acceptance. Keep file-level scope, task breakdown, verification results, and code-review
+evidence in the task or pull request.
 
-The RFC author drafts only the coordinator-reserved path. The challenger reviews the
-exact plan and RFC bytes. After all findings are resolved, the final challenged bytes
-must already contain the sole metadata line `- Status: Accepted`. The coordinator then
-creates a gate whose question includes the RFC path and SHA-256 without editing the RFC.
-Implementation may start only after that gate resolves to `approved`. Any
-subsequent RFC byte change requires a new challenge and confirmation.
+The RFC author drafts only the selected path. An independent challenger reviews the plan
+and RFC. After all findings are resolved, the reviewer or owner records approval and the
+RFC's sole metadata status line becomes `- Status: Accepted`. Implementation may then
+start. Do not rewrite an accepted decision. A material change requires a new RFC with a
+`Supersedes` reference and its own challenge and approval. Mark the prior RFC `Superseded`
+only after the replacement is accepted.
 
 Plan/RFC revision and implementation/review correction loops are limited to two rounds.
 After two unsuccessful rounds, mark the task blocked and escalate the unresolved decision
 to the user or technical owner. Do not silently create another worker attempt.
 
-The approved plan is stored as a separate JSON artifact. Its SHA-256 and a coordinator-generated HMAC are recorded in the cumulative lifecycle envelope, and every gate verifies that the envelope plan still matches that artifact. The HMAC signs `<run_id>:<plan_sha256>` using `DEVELOPMENT_GATE_KEY`. That key belongs only to the coordinator or CI gate runner and must not be exposed to implementation or review workers.
-
-After approving the plan, the coordinator creates the attestation:
-
-```bash
-DEVELOPMENT_GATE_KEY="..." just sign-approved-plan \
-  "<orca-run-id>" "rfcs/NNNN-short-name/jsons/plan.json"
-```
-
-Workers produce evidence envelopes; the coordinator or CI gate runner executes lifecycle hooks with the key.
+Workers produce cumulative lifecycle envelopes from the approved plan recorded in the
+task. Lifecycle hooks validate the embedded evidence and role separation without a
+separate signature or receipt.
 
 Use `.codex/orchestrator/templates/task-plan.md` or the equivalent `.claude` template.
 
@@ -172,30 +167,12 @@ just orca-development-run "describe the desired outcome" \
   "rfcs/NNNN-short-name.md" codex
 ```
 
-If a Run is abandoned before its confirmation gate is created, release its reservation:
-
-```bash
-just orca-rfc-release "rfcs/NNNN-short-name.md"
-```
-
 The command creates the Orca Run and dependent planning, RFC-authoring, and challenge
 tasks, then starts only the planner. It intentionally does not create or start an
 implementation task.
 
-After challenge approval, the coordinator creates the exact-digest gate on a dedicated
-confirmation task. No implementation task is created yet:
-
-```bash
-just orca-confirm-rfc-create "<run>" "<challenge-task>" \
-  "rfcs/NNNN-short-name/jsons/challenge.json" "rfcs/NNNN-short-name.md"
-```
-
-After the gate resolves, collect the authoritative receipt before starting a worker:
-
-```bash
-just orca-confirm-rfc-collect "<run>" "<confirmation-task>" "<challenge-task>" \
-  "rfcs/NNNN-short-name/jsons/challenge.json" "<gate>" "rfcs/NNNN-short-name.md"
-```
+After challenge findings are resolved, record reviewer or owner approval, mark the RFC
+`Accepted`, and create the implementation tasks.
 
 Generate the development panel from a lifecycle envelope:
 
@@ -209,26 +186,24 @@ Open it as a browser tab in the active Orca worktree:
 just orca-panel-open "path/to/lifecycle-input.json"
 ```
 
-The panel displays stage readiness, principle decisions, ownership, exact verification commands, review findings, final-gate issues, and Orca Run/Task/Dispatch provenance. With `DEVELOPMENT_GATE_KEY` available to the coordinator, it also executes the final gate and shows trusted ship readiness.
+The panel displays stage readiness, principle decisions, ownership, exact verification commands, review findings, final-gate issues, and Orca Run/Task/Dispatch provenance.
 
 1. Create one Orca Run for the objective.
-2. Reserve the RFC number and create planning, RFC-authoring, and challenge tasks.
+2. Select an unused RFC path and create planning, RFC-authoring, and challenge tasks.
 3. Dispatch planner, RFC author, and challenger in dependency order.
-4. Resolve challenge findings before marking the RFC `Accepted`.
-5. Create an exact-digest confirmation gate on a dedicated confirmation task.
-6. Collect the approved receipt and preserve the accepted RFC baseline.
-7. Start implementation tasks with disjoint file ownership.
-8. Dispatch verification after implementation settles.
-9. Dispatch the code reviewer only after verification passes.
-10. Route findings to the original implementation owner and re-verify fixes.
-11. Ship only after the final review decision is `approved`.
+4. Resolve challenge findings and record approval before marking the RFC `Accepted`.
+5. Start implementation tasks with disjoint file ownership.
+6. Dispatch verification after implementation settles.
+7. Dispatch the code reviewer only after verification passes.
+8. Route findings to the original implementation owner and re-verify fixes.
+9. Ship only after the final review decision is `approved`.
 
 For coordinator waits, process the complete delivery, acknowledge its delivery ID, and
 release or deliberately reuse each settled worker before waiting again. Never retry a task
 because a wait window timed out; inspect worker state first. Do not exceed two failed
 attempts or correction rounds without escalating.
 
-The final review envelope must include the Orca Run, review Task, and review Dispatch identifiers. Reviewer identity comes from the execution metadata, while implementation ownership comes from the coordinator-attested approved-plan artifact.
+The final review envelope must include the Orca Run, review Task, and review Dispatch identifiers. Reviewer identity comes from the execution metadata, while implementation ownership comes from the approved task plan.
 
 Use Orca worktree comments to record decisions and keep each implementation task isolated in its own worktree. Parallel implementation is allowed only when write sets do not overlap.
 
@@ -248,7 +223,7 @@ against the code and tests before they remain in the final ledger.
 A completed change retains:
 
 - Approved plan and challenge decision.
-- Accepted RFC and exact-digest confirmation receipt.
+- Accepted RFC and recorded reviewer or owner approval.
 - Implementation summary and changed-file list.
 - Verification commands with results.
 - Independent code-review report.

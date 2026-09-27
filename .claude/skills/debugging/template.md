@@ -29,4 +29,4 @@
 
 ## Governed lifecycle
 
-- Amendment and confirmation status, or not applicable:
+- Amendment and approval status, or not applicable:

@@ -58,4 +58,4 @@ After any delivery mutation, confirm the resulting branch or PR points to the re
 
 ## Governed lifecycle
 
-Governed delivery requires the accepted RFC, exact-digest confirmation, complete lifecycle evidence, passing verification, and approved independent review. This skill must not self-approve missing evidence.
+Governed delivery requires the accepted RFC and recorded approval, complete lifecycle evidence, passing verification, and approved independent review. This skill must not self-approve missing evidence.

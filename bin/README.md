@@ -16,11 +16,8 @@ Development governance helpers:
 - `check-pr-body` validates pull request titles and required template sections.
 - `render-agent-rules` renders nested agent instructions from `agent-rules.json`.
 - `install-agent-tooling` configures and validates a fresh repository checkout.
-- `orca-development-run` reserves an RFC path and creates the planning/RFC/challenge DAG.
-- `orca-rfc-release` removes an abandoned empty RFC reservation lock.
-- `orca-confirm-rfc` creates or collects the exact-digest RFC confirmation gate.
-- `validate-rfc-layout` enforces the canonical RFC template and `rfcs/<rfc-stem>/jsons/` artifact layout.
-- `sign-approved-plan` attests an approved plan for lifecycle hooks.
+- `orca-development-run` selects an unused RFC path and creates the planning/RFC/challenge DAG.
+- `validate-rfc-layout` enforces the layered decision-record template, acceptance completeness, and the ban on RFC sidecar JSON.
 - `.claude/hooks/bash_guard.py` blocks destructive shell, Git, infrastructure, and release commands before Claude executes them.
 
 - artifacts-generate.sh Generating artifacts from protos and OpenAPI specs

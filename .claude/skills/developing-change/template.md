@@ -30,4 +30,4 @@
 
 ## Governed lifecycle
 
-- Confirmed plan and scope status, or not applicable:
+- Accepted plan and scope status, or not applicable:

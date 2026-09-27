@@ -45,4 +45,4 @@ Return to `development-lifecycle` when the root cause expands scope or reveals a
 
 ## Governed lifecycle
 
-Debugging evidence may amend a Governed plan, but any changed RFC bytes or approved scope must pass the required challenge and confirmation again. This skill must not self-approve that amendment.
+Debugging evidence may amend a Governed plan. If it materially changes an accepted decision, create a superseding RFC and obtain the required challenge and approval. This skill must not self-approve that decision.

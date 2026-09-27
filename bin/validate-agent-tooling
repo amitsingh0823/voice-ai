@@ -82,7 +82,7 @@ for root in .codex .claude; do
   grep -q 'Freeze the review boundary' "$root/agents/code-reviewer.md" || fail "missing fixed review boundary in $root"
   grep -q 'Disposition each candidate finding' "$root/agents/code-reviewer.md" || fail "missing finding ledger in $root"
   grep -q '^name: rfc-author$' "$root/agents/rfc-author.md" || fail "missing RFC author role in $root"
-  grep -q 'coordinator-reserved RFC path' "$root/agents/rfc-author.md" || fail "missing RFC path ownership in $root"
+  grep -q 'coordinator-selected RFC path' "$root/agents/rfc-author.md" || fail "missing RFC path ownership in $root"
 done
 
 cmp -s .codex/agents/rfc-author.md .claude/agents/rfc-author.md || fail "RFC author role parity drift"
@@ -149,7 +149,6 @@ for executable in \
   githooks/pre-push; do
   test -x "$executable" || fail "$executable must be executable"
 done
-test -x bin/orca-rfc-release || fail "bin/orca-rfc-release must be executable"
 test -x bin/validate-rfc-layout || fail "bin/validate-rfc-layout must be executable"
 test -f justfile || fail "missing root justfile"
 test -f just/development.just || fail "missing development recipes"
@@ -162,7 +161,6 @@ grep -q '^agent-pr-ready ' just/development.just || fail "missing agent-pr-ready
 grep -q '^agent-manifest-check:' just/development.just || fail "missing agent-manifest-check Just recipe"
 grep -q '^agent-review ' just/development.just || fail "missing agent-review Just recipe"
 grep -q '^ui-browser-test:' just/development.just || fail "missing ui-browser-test Just recipe"
-grep -q '^orca-rfc-release ' just/development.just || fail "missing orca-rfc-release Just recipe"
 grep -q '^validate-rfc-layout:' just/development.just || fail "missing validate-rfc-layout Just recipe"
 test "$(grep -c 'golangci-lint run --allow-serial-runners' bin/pre-commit-go)" -eq 2 || fail "golangci-lint hooks must serialize concurrent runners"
 python3 - "$repo_root/.pre-commit-config.yaml" <<'PY'

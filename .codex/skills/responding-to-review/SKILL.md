@@ -48,4 +48,4 @@ Report counts by disposition and severity, exact commands rerun, remaining block
 
 ## Governed lifecycle
 
-Governed implementation and review correction cycles are limited to two. A correction that changes accepted scope or RFC bytes returns to challenge and exact-digest confirmation. This skill must not self-approve corrections.
+Governed implementation and review correction cycles are limited to two. A correction that materially changes an accepted decision requires a superseding RFC, challenge, and reviewer or owner approval. This skill must not self-approve corrections.

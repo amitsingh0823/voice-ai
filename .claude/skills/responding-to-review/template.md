@@ -26,4 +26,4 @@
 
 ## Governed lifecycle
 
-- Correction round and confirmation status, or not applicable:
+- Correction round and RFC approval status, or not applicable:

@@ -23,7 +23,7 @@
       "owner": ".claude/hooks/plan_reminder.py",
       "evidence": ["tests/agent_tooling/test_plan_reminder.py"],
       "verification": ["just test-agent-hooks"],
-      "limitation": "The pre-edit reminder is Claude-specific and advisory for Fast and Standard work; Governed work uses the signed pre-implementation gate."
+      "limitation": "The pre-edit reminder is Claude-specific and advisory for Fast and Standard work; Governed work requires an accepted and approved RFC."
     },
     {
       "id": "permission-and-command-safety",

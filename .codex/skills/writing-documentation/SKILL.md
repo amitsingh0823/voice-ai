@@ -43,4 +43,4 @@ Report the authoritative sources checked, documentation changed, commands valida
 
 ## Governed lifecycle
 
-Documentation does not replace Governed evidence. RFC status, confirmation receipts, verification results, and review decisions must remain accurate and traceable. This skill must not self-approve those records.
+Documentation does not replace Governed evidence. RFC status and approval, verification results, and review decisions must remain accurate and traceable. Do not rewrite an accepted RFC; use a superseding RFC for a material decision change. This skill must not self-approve those records.

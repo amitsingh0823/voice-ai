@@ -76,7 +76,7 @@ def main() -> int:
         "- Confirm the Fast, Standard, or Governed tier.\n"
         "- Fast work needs a concise change contract.\n"
         "- Standard work needs agreed acceptance criteria, scope, ownership, risks, and verification.\n"
-        "- Governed implementation must not begin before the approved exact-digest gate.\n"
+        "- Governed implementation must not begin before the RFC is accepted and approved.\n"
         "If this evidence is absent, pause the edit and establish it first."
     )
     json.dump(

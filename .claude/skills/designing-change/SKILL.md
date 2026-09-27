@@ -52,4 +52,4 @@ This skill decides the approach but does not implement it. Do not manufacture ad
 
 ## Governed lifecycle
 
-For Governed work, the decision feeds the reserved RFC and must pass independent challenge plus exact-digest confirmation. This skill cannot approve its own decision or authorize implementation.
+For Governed work, record the decision in the selected RFC and obtain independent challenge plus reviewer or owner approval. Do not rewrite an accepted decision; create a superseding RFC for a material change. This skill cannot approve its own decision or authorize implementation.

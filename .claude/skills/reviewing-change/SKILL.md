@@ -68,4 +68,4 @@ The filtered diff digest and combined panel are evidence, not permission to merg
 
 ## Governed lifecycle
 
-Governed review must verify reviewer independence, accepted scope, confirmation evidence, successful declared commands, and resolution of all blocking findings. This skill must not edit the candidate or self-approve authored work.
+Governed review must verify reviewer independence, accepted scope and RFC approval, successful declared commands, and resolution of all blocking findings. This skill must not edit the candidate or self-approve authored work.

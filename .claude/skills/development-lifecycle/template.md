@@ -27,7 +27,7 @@
 
 ## Governed lifecycle
 
-- RFC and confirmation evidence, or not applicable:
+- RFC and approval evidence, or not applicable:
 - Independent roles:
 
 ## Completion evidence
