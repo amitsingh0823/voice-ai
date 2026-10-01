@@ -1,22 +1,22 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Helmet } from '@/app/components/helmet';
-import { InviteOrganizationUserDialog } from '@/app/components/base/modal/invite-organization-user-modal';
-import { InviteProjectUserDialog } from '@/app/components/base/modal/invite-project-user-modal';
-import {
-  DeleteUserFromOrganization,
-  DeleteUserFromOrganizationRequest,
-  UpdateUserOrganizationRole,
-  UpdateUserOrganizationRoleRequest,
-  User,
-} from '@rapidaai/react';
+import { Helmet } from '@/app/components/app-shell/helmet';
+import { InviteOrganizationUserDialog } from '@/app/components/dialogs/workspace';
+import { InviteProjectUserDialog } from '@/app/components/dialogs/workspace';
+import { User } from '@rapidaai/react';
 import { useCurrentCredential } from '@/hooks/use-credential';
 import toast from 'react-hot-toast/headless';
-import { useRapidaStore } from '@/hooks';
-import { useUserPageStore } from '@/hooks';
+import { useRapidaStore } from '@/stores/app';
+import { useUserPageStore } from '@/stores/user';
 import { SingleUser } from '@/app/pages/workspace/user/single-user';
-import { PrimaryButton } from '@/app/components/carbon/button';
-import { Pagination } from '@/app/components/carbon/pagination';
-import { Add, Renew, TrashCan, UserAdmin } from '@carbon/icons-react';
+import { PrimaryButton } from '@/app/components/ui/primitives';
+import { Pagination } from '@/app/components/ui/primitives';
+import {
+  Add,
+  Renew,
+  TrashCan,
+  UserAdmin,
+  UserMultiple,
+} from '@carbon/icons-react';
 import {
   Table,
   TableHead,
@@ -30,11 +30,12 @@ import {
   TableToolbarSearch,
   Button,
 } from '@carbon/react';
-import { PageHeaderBlock } from '@/app/components/blocks/page-header-block';
-import { PageTitleWithCount } from '@/app/components/blocks/page-title-with-count';
-import { TableSection } from '@/app/components/sections/table-section';
-import { ConfirmDeleteDialog } from '@/app/components/base/modal/confirm-delete';
-import { connectionConfig } from '@/configs';
+import { PageHeaderBlock } from '@/app/components/layout/blocks/page-header-block';
+import { PageTitleWithCount } from '@/app/components/layout/blocks/page-title-with-count';
+import { TableSection } from '@/app/components/layout/sections/table-section';
+import { ConfirmDeleteDialog } from '@/app/components/dialogs/shared';
+import { deleteOrganizationUser, updateOrganizationUserRole } from '@/clients';
+import { EmptyState } from '@/app/components/ui/feedback';
 
 const headers = [
   { key: 'id', header: 'ID' },
@@ -88,13 +89,11 @@ export function UserPage() {
 
   const onDeleteOrganizationUser = async (user: User) => {
     showLoader('overlay');
-    const req = new DeleteUserFromOrganizationRequest();
-    req.setUserid(user.getId());
 
     try {
-      const response = await DeleteUserFromOrganization(connectionConfig, req, {
-        authorization: token,
-        'x-auth-id': authId,
+      const response = await deleteOrganizationUser({
+        userId: user.getId(),
+        auth: { token, userId: authId },
       });
       hideLoader();
 
@@ -121,14 +120,12 @@ export function UserPage() {
     organizationRole: string,
   ) => {
     showLoader('overlay');
-    const req = new UpdateUserOrganizationRoleRequest();
-    req.setUserid(user.getId());
-    req.setOrganizationrole(organizationRole);
 
     try {
-      const response = await UpdateUserOrganizationRole(connectionConfig, req, {
-        authorization: token,
-        'x-auth-id': authId,
+      const response = await updateOrganizationUserRole({
+        userId: user.getId(),
+        organizationRole,
+        auth: { token, userId: authId },
       });
       hideLoader();
 
@@ -225,45 +222,56 @@ export function UserPage() {
           </PrimaryButton>
         </TableToolbarContent>
       </TableToolbar>
-      <TableSection>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeader className="!w-12" />
-              {headers.map(h => (
-                <TableHeader key={h.key}>{h.header}</TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {userActions.users.map((usr, idx) => (
-              <SingleUser
-                key={idx}
-                user={usr}
-                selected={selectedUserId === usr.getId()}
-                onSelect={() =>
-                  setSelectedUserId(
-                    selectedUserId === usr.getId() ? null : usr.getId(),
-                  )
-                }
-              />
-            ))}
-          </TableBody>
-        </Table>
-        <Pagination
-          totalItems={userActions.totalCount}
-          page={userActions.page}
-          pageSize={userActions.pageSize}
-          pageSizes={[10, 20, 50]}
-          onChange={({ page, pageSize }) => {
-            if (pageSize !== userActions.pageSize) {
-              userActions.setPageSize(pageSize);
-            } else {
-              userActions.setPage(page);
-            }
-          }}
+      {!loading && userActions.users.length === 0 ? (
+        <EmptyState
+          icon={UserMultiple}
+          title="No organization users"
+          subtitle="Invite teammates to collaborate on projects and manage organization access."
+          action="Invite user"
+          actionIcon={Add}
+          onAction={() => setInviteOrganizationModalOpen(true)}
         />
-      </TableSection>
+      ) : (
+        <TableSection>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeader className="!w-12" />
+                {headers.map(h => (
+                  <TableHeader key={h.key}>{h.header}</TableHeader>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {userActions.users.map((usr, idx) => (
+                <SingleUser
+                  key={idx}
+                  user={usr}
+                  selected={selectedUserId === usr.getId()}
+                  onSelect={() =>
+                    setSelectedUserId(
+                      selectedUserId === usr.getId() ? null : usr.getId(),
+                    )
+                  }
+                />
+              ))}
+            </TableBody>
+          </Table>
+          <Pagination
+            totalItems={userActions.totalCount}
+            page={userActions.page}
+            pageSize={userActions.pageSize}
+            pageSizes={[10, 20, 50]}
+            onChange={({ page, pageSize }) => {
+              if (pageSize !== userActions.pageSize) {
+                userActions.setPageSize(pageSize);
+              } else {
+                userActions.setPage(page);
+              }
+            }}
+          />
+        </TableSection>
+      )}
       <InviteOrganizationUserDialog
         modalOpen={inviteOrganizationModalOpen}
         setModalOpen={setInviteOrganizationModalOpen}

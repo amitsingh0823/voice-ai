@@ -1,17 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { Helmet } from '@/app/components/helmet';
+import { Helmet } from '@/app/components/app-shell/helmet';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CreatePassword } from '@rapidaai/react';
 import { CreatePasswordResponse } from '@rapidaai/react';
 import { useForm } from 'react-hook-form';
 import { ServiceError } from '@rapidaai/react';
-import { connectionConfig } from '@/configs';
-import { useRapidaStore } from '@/hooks';
-import { Stack } from '@/app/components/carbon/form';
-import { PrimaryButton } from '@/app/components/carbon/button';
-import { Notification } from '@/app/components/carbon/notification';
+import { useRapidaStore } from '@/stores/app';
+import { Stack } from '@/app/components/ui/primitives';
+import { PrimaryButton } from '@/app/components/ui/primitives';
+import { Notification } from '@/app/components/ui/feedback';
 import { ArrowRight } from '@carbon/icons-react';
 import { PasswordInput } from '@carbon/react';
+import { createPassword } from '@/clients';
 
 export function ChangePasswordPage() {
   const { register, handleSubmit } = useForm();
@@ -52,14 +51,14 @@ export function ChangePasswordPage() {
       return;
     }
     showLoader();
-    CreatePassword(connectionConfig, token, data.password, afterCreatePassword);
+    createPassword(token, data.password, afterCreatePassword);
   };
 
   return (
     <Stack gap={6}>
-      <Helmet title="Change your password" />
+      <Helmet title="Set a new password" />
       <Stack gap={2}>
-        <h1 className="m-0 text-[1.8rem] leading-tight">Change Password</h1>
+        <h1 className="m-0 text-[1.8rem] leading-tight">Set a new password</h1>
         <p className="mt-1.5 text-sm leading-[1.4286] text-(--cds-text-secondary)">
           You've requested to change your password. Please enter your new
           password below to secure your account.
@@ -95,7 +94,7 @@ export function ChangePasswordPage() {
             isLoading={loading}
             className="!w-full !max-w-none !justify-between"
           >
-            Change Password
+            Save new password
           </PrimaryButton>
         </Stack>
       </form>

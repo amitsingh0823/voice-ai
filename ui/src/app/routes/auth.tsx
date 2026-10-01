@@ -4,15 +4,14 @@ import {
   AuthForgotPasswordPage,
   AuthChangePasswordPage,
 } from '@/app/pages/authentication';
-import { CenterBox } from '@/app/components/container/center-box';
-import { IgnoreBox } from '@/app/components/container/protected-box';
+import { CenterBox } from '@/app/components/layout/container/center-box';
+import { IgnoreBox } from '@/app/components/layout/container/protected-box';
 import { Outlet, Route, Routes } from 'react-router-dom';
-import { FlexBox } from '@/app/components/container/flex-box';
+import { FlexBox } from '@/app/components/layout/container/flex-box';
 export function AuthRoute() {
   return (
     <Routes>
       <Route
-        path="/"
         element={
           <IgnoreBox>
             <FlexBox>
@@ -24,8 +23,8 @@ export function AuthRoute() {
         }
       >
         <Route path="signup" element={<AuthSignUpPage />} />
-        <Route index path="/" element={<AuthSignInPage />} />
-        <Route index path="signin" element={<AuthSignInPage />} />
+        <Route index element={<AuthSignInPage />} />
+        <Route path="signin" element={<AuthSignInPage />} />
         <Route path="forgot-password" element={<AuthForgotPasswordPage />} />
         <Route
           path="change-password/:token"

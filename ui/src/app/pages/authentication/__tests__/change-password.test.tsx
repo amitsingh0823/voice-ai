@@ -12,9 +12,7 @@ const mockHideLoader = jest.fn();
 let mockParams: Record<string, string | undefined> = {};
 
 jest.mock('@rapidaai/react', () => ({
-  ConnectionConfig: class ConnectionConfig {
-    constructor(_: unknown) {}
-  },
+  ConnectionConfig: class ConnectionConfig {},
   CreatePassword: jest.fn(),
 }));
 
@@ -24,7 +22,7 @@ jest.mock('react-router-dom', () => ({
   useParams: () => mockParams,
 }));
 
-jest.mock('@/hooks', () => ({
+jest.mock('@/stores/app', () => ({
   useRapidaStore: () => ({
     loading: false,
     showLoader: mockShowLoader,
@@ -32,22 +30,22 @@ jest.mock('@/hooks', () => ({
   }),
 }));
 
-jest.mock('@/app/components/helmet', () => ({
+jest.mock('@/app/components/app-shell/helmet', () => ({
   Helmet: () => null,
 }));
 
-jest.mock('@/app/components/carbon/form', () => ({
+jest.mock('@/app/components/ui/primitives/form', () => ({
   Stack: ({ children }: any) => <div>{children}</div>,
   TextInput: (props: any) => <input {...props} />,
 }));
 
-jest.mock('@/app/components/carbon/button', () => ({
+jest.mock('@/app/components/ui/primitives/button', () => ({
   PrimaryButton: ({ children, isLoading, renderIcon, ...props }: any) => (
     <button {...props}>{children}</button>
   ),
 }));
 
-jest.mock('@/app/components/carbon/notification', () => ({
+jest.mock('@/app/components/ui/feedback/notification', () => ({
   Notification: ({ subtitle }: any) => <div>{subtitle}</div>,
 }));
 
@@ -66,13 +64,17 @@ describe('ChangePasswordPage', () => {
   it('shows token expiry error when token is missing', async () => {
     render(<ChangePasswordPage />);
 
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Set a new password' }),
+    ).toBeInTheDocument();
+
     fireEvent.change(screen.getAllByPlaceholderText('********')[0], {
       target: { value: 'secret' },
     });
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(
       await screen.findByText(
@@ -93,10 +95,12 @@ describe('ChangePasswordPage', () => {
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret-2' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(
-      await screen.findByText('Passwords entered do not match, please check and try again.'),
+      await screen.findByText(
+        'Passwords entered do not match, please check and try again.',
+      ),
     ).toBeInTheDocument();
     expect(CreatePassword).not.toHaveBeenCalled();
   });
@@ -117,7 +121,7 @@ describe('ChangePasswordPage', () => {
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     await waitFor(() => {
       expect(CreatePassword).toHaveBeenCalled();
@@ -143,10 +147,12 @@ describe('ChangePasswordPage', () => {
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(
-      await screen.findByText('Unable to process your request. Please try again later.'),
+      await screen.findByText(
+        'Unable to process your request. Please try again later.',
+      ),
     ).toBeInTheDocument();
     expect(mockHideLoader).toHaveBeenCalled();
   });
@@ -170,7 +176,7 @@ describe('ChangePasswordPage', () => {
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(await screen.findByText('Token invalid')).toBeInTheDocument();
   });
@@ -194,10 +200,12 @@ describe('ChangePasswordPage', () => {
     fireEvent.change(screen.getAllByPlaceholderText('********')[1], {
       target: { value: 'secret' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Change Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(
-      await screen.findByText('Unable to process your request. Please try again later.'),
+      await screen.findByText(
+        'Unable to process your request. Please try again later.',
+      ),
     ).toBeInTheDocument();
   });
 });

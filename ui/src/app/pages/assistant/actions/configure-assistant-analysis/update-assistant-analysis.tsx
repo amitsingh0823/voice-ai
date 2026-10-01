@@ -1,24 +1,16 @@
 import React, { FC, useEffect, useState } from 'react';
 import { useConfirmDialog } from '@/app/pages/assistant/actions/hooks/use-confirmation';
 import { useGlobalNavigation } from '@/hooks/use-global-navigator';
-import { PrimaryButton, SecondaryButton } from '@/app/components/carbon/button';
-import { Stack, TextInput, TextArea } from '@/app/components/carbon/form';
+import { PrimaryButton, SecondaryButton } from '@/app/components/ui/primitives';
+import { Stack, TextInput, TextArea } from '@/app/components/ui/primitives';
 import { ButtonSet, NumberInput } from '@carbon/react';
 import { useCurrentCredential } from '@/hooks/use-credential';
 import { randomMeaningfullName } from '@/utils';
-import { EndpointDropdown } from '@/app/components/dropdown/endpoint-dropdown';
-import {
-  Endpoint,
-  GetAssistantConfiguration,
-  GetAssistantConfigurationRequest,
-  Metadata,
-  UpdateAssistantConfiguration,
-  UpdateAssistantConfigurationRequest,
-} from '@rapidaai/react';
+import { EndpointDropdown } from '@/app/components/domain/dropdowns/endpoint-dropdown';
+import { Endpoint, Metadata } from '@rapidaai/react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast/headless';
-import { connectionConfig } from '@/configs';
-import { TabForm } from '@/app/components/form/tab-form';
+import { TabForm } from '@/app/components/ui/composites';
 import {
   ASSISTANT_CONDITION_KEY_OPTIONS,
   ASSISTANT_CONDITION_OPERATOR_OPTIONS,
@@ -27,9 +19,13 @@ import {
   AssistantConditionEntry,
   AssistantMappingTable,
   normalizeAssistantConditionEntries,
-} from '@/app/components/tools/common';
-import { SourceConditionRule } from '@/app/components/conditions/source-condition-rule';
-import { InputGroup } from '@/app/components/input-group/index';
+} from '@/app/components/domain/tools/common';
+import { SourceConditionRule } from '@/app/components/domain/conditions/source-condition-rule';
+import { InputGroup } from '@/app/components/ui/primitives';
+import {
+  getAssistantConfigurationById,
+  updateAssistantConfigurationById,
+} from '@/clients/assistant.client';
 
 type ParamType =
   | 'client'
@@ -131,15 +127,11 @@ export const UpdateAssistantAnalysis: FC<{ assistantId: string }> = ({
 
   useEffect(() => {
     const load = async () => {
-      const request = new GetAssistantConfigurationRequest();
-      request.setAssistantid(assistantId);
-      request.setId(analysisId!);
-
       try {
-        const res = await GetAssistantConfiguration(connectionConfig, request, {
-          'x-auth-id': authId,
-          authorization: token,
-          'x-project-id': projectId,
+        const res = await getAssistantConfigurationById({
+          assistantId,
+          configurationId: analysisId!,
+          auth: { projectId, token, userId: authId },
         });
         const analysis = res?.getData();
         if (!analysis) return;
@@ -239,13 +231,6 @@ export const UpdateAssistantAnalysis: FC<{ assistantId: string }> = ({
       parameters.map(p => [`${p.type}.${p.key}`, p.value]),
     );
 
-    const request = new UpdateAssistantConfigurationRequest();
-    request.setAssistantid(assistantId);
-    request.setId(analysisId!);
-    request.setConfigurationtype(analysisConfigurationType);
-    request.setProvider('endpoint');
-    request.setEnabled(true);
-
     const options: Metadata[] = [];
     [
       { key: 'name', value: name },
@@ -267,18 +252,16 @@ export const UpdateAssistantAnalysis: FC<{ assistantId: string }> = ({
       item.setValue(value);
       options.push(item);
     });
-    request.setOptionsList(options);
-
     try {
-      const response = await UpdateAssistantConfiguration(
-        connectionConfig,
-        request,
-        {
-          'x-auth-id': authId,
-          authorization: token,
-          'x-project-id': projectId,
-        },
-      );
+      const response = await updateAssistantConfigurationById({
+        assistantId,
+        configurationId: analysisId!,
+        configurationType: analysisConfigurationType,
+        provider: 'endpoint',
+        enabled: true,
+        options,
+        auth: { projectId, token, userId: authId },
+      });
 
       if (response?.getSuccess()) {
         toast.success(`Assistant's analysis updated successfully`);

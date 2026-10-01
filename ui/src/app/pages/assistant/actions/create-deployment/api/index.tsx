@@ -7,7 +7,7 @@ import {
 } from '@/app/pages/assistant/actions/create-deployment/commons/configure-experience';
 import { ConfigureAudioOutputProvider } from '@/app/pages/assistant/actions/create-deployment/commons/configure-audio-output';
 import { ConfigureAudioInputProvider } from '@/app/pages/assistant/actions/create-deployment/commons/configure-audio-input';
-import { useRapidaStore } from '@/hooks';
+import { useRapidaStore } from '@/stores/app';
 import { useAllProviderCredentials } from '@/hooks/use-model';
 import { useCurrentCredential } from '@/hooks/use-credential';
 import { useGlobalNavigation } from '@/hooks/use-global-navigator';
@@ -15,36 +15,34 @@ import { FC, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   AssistantApiDeployment,
-  ConnectionConfig,
-  CreateAssistantApiDeployment,
-  CreateAssistantDeploymentRequest,
   DeploymentAudioProvider,
-  GetAssistantDeploymentRequest,
   Metadata,
 } from '@rapidaai/react';
-import { GetAssistantApiDeployment } from '@rapidaai/react';
 import toast from 'react-hot-toast/headless';
-import { Helmet } from '@/app/components/helmet';
+import { Helmet } from '@/app/components/app-shell/helmet';
 import {
   GetDefaultMicrophoneConfig,
   GetDefaultSpeechToTextIfInvalid,
   ValidateSpeechToTextIfInvalid,
-} from '@/app/components/providers/speech-to-text/provider';
+} from '@/app/components/domain/providers/speech-to-text/provider';
 import {
   GetDefaultSpeakerConfig,
   GetDefaultTextToSpeechIfInvalid,
   ValidateTextToSpeechIfInvalid,
-} from '@/app/components/providers/text-to-speech/provider';
-import { connectionConfig } from '@/configs';
+} from '@/app/components/domain/providers/text-to-speech/provider';
 import { useConfirmDialog } from '@/app/pages/assistant/actions/hooks/use-confirmation';
-import { TabForm } from '@/app/components/form/tab-form';
+import { TabForm } from '@/app/components/ui/composites';
 import {
   PrimaryButton,
   SecondaryButton,
   GhostButton,
-} from '@/app/components/carbon/button';
-import { InputCheckbox } from '@/app/components/carbon/form/input-checkbox';
+} from '@/app/components/ui/primitives';
+import { InputCheckbox } from '@/app/components/ui/primitives';
 import { ButtonSet, CheckboxGroup } from '@carbon/react';
+import {
+  createAssistantDeploymentByType,
+  getAssistantDeploymentByType,
+} from '@/clients/assistant.client';
 
 const STEPS = [
   {
@@ -133,17 +131,11 @@ const ConfigureAssistantApiDeployment: FC<{ assistantId: string }> = ({
     hasFetched.current = true;
 
     showLoader('block');
-    const request = new GetAssistantDeploymentRequest();
-    request.setAssistantid(assistantId);
-    GetAssistantApiDeployment(
-      connectionConfig,
-      request,
-      ConnectionConfig.WithDebugger({
-        authorization: token,
-        userId: authId,
-        projectId,
-      }),
-    )
+    getAssistantDeploymentByType({
+      assistantId,
+      deploymentType: 'api',
+      auth: { projectId, token, userId: authId },
+    })
       .then(response => {
         hideLoader();
         if (response?.getData()) {
@@ -294,7 +286,6 @@ const ConfigureAssistantApiDeployment: FC<{ assistantId: string }> = ({
       }
     }
 
-    const req = new CreateAssistantDeploymentRequest();
     const deployment = new AssistantApiDeployment();
     deployment.setAssistantid(assistantId);
     deployment.setGreetinginterruptible(
@@ -335,16 +326,11 @@ const ConfigureAssistantApiDeployment: FC<{ assistantId: string }> = ({
       deployment.setOutputaudio(outputAudio);
     }
 
-    req.setApi(deployment);
-    CreateAssistantApiDeployment(
-      connectionConfig,
-      req,
-      ConnectionConfig.WithDebugger({
-        authorization: token,
-        userId: authId,
-        projectId,
-      }),
-    )
+    createAssistantDeploymentByType({
+      deployment,
+      deploymentType: 'api',
+      auth: { projectId, token, userId: authId },
+    })
       .then(response => {
         if (response?.getData() && response.getSuccess()) {
           toast.success('SDK / API deployment updated successfully.');

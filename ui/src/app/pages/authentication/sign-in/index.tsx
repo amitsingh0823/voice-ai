@@ -1,25 +1,24 @@
 import { useState, useContext, useEffect, useCallback } from 'react';
-import { Helmet } from '@/app/components/helmet';
-import { SocialButtonGroup } from '@/app/components/carbon/button/social-button-group';
+import { Helmet } from '@/app/components/app-shell/helmet';
+import { SocialButtonGroup } from '@/app/components/ui/primitives/buttons/social-button-group';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import {
-  AuthenticateResponse,
-  Google,
-  Linkedin,
-  Github,
-  AuthenticateUser,
-} from '@rapidaai/react';
-import { useRapidaStore } from '@/hooks';
+import { AuthenticateResponse } from '@rapidaai/react';
+import { useRapidaStore } from '@/stores/app';
 import { ServiceError } from '@rapidaai/react';
 import { AuthContext } from '@/context/auth-context';
 import { useWorkspace } from '@/workspace';
-import { connectionConfig } from '@/configs';
-import { Stack, TextInput } from '@/app/components/carbon/form';
-import { PrimaryButton } from '@/app/components/carbon/button';
-import { Notification } from '@/app/components/carbon/notification';
+import { Stack, TextInput } from '@/app/components/ui/primitives';
+import { PrimaryButton } from '@/app/components/ui/primitives';
+import { Notification } from '@/app/components/ui/feedback';
 import { ArrowRight } from '@carbon/icons-react';
 import { Link, PasswordInput } from '@carbon/react';
+import {
+  authenticateUser,
+  githubAuth,
+  googleAuth,
+  linkedinAuth,
+} from '@/clients';
 
 export function SignInPage() {
   let navigate = useNavigate();
@@ -60,23 +59,15 @@ export function SignInPage() {
 
   const onAuthenticate = data => {
     showLoader();
-    AuthenticateUser(
-      connectionConfig,
-      data.email,
-      data.password,
-      afterAuthenticate,
-    );
+    authenticateUser(data.email, data.password, afterAuthenticate);
   };
 
   useEffect(() => {
     if (state && code) {
       showLoader();
-      if (state === 'google')
-        Google(connectionConfig, afterAuthenticate, state, code);
-      if (state === 'linkedin')
-        Linkedin(connectionConfig, afterAuthenticate, state, code);
-      if (state === 'github')
-        Github(connectionConfig, afterAuthenticate, state, code);
+      if (state === 'google') googleAuth(afterAuthenticate, state, code);
+      if (state === 'linkedin') linkedinAuth(afterAuthenticate, state, code);
+      if (state === 'github') githubAuth(afterAuthenticate, state, code);
     }
   }, [afterAuthenticate, code, state]);
 
@@ -84,12 +75,12 @@ export function SignInPage() {
     <Stack gap={6}>
       <Helmet title="Sign in to your account" />
       <Stack gap={2}>
-        <h1 className="m-0 text-[1.8rem] leading-tight">Signin</h1>
+        <h1 className="m-0 text-[1.8rem] leading-tight">Sign in</h1>
         {workspace.authentication.signUp.enable && (
           <p className="mt-1.5 text-sm leading-[1.4286] text-(--cds-text-secondary)">
             Don't have an account? &nbsp;
             <Link href="/auth/signup" className="text-sm !underline">
-              Sign-up
+              Sign up
             </Link>
           </p>
         )}
@@ -140,7 +131,7 @@ export function SignInPage() {
 
       <Stack gap={2}>
         <p className="text-center">
-          <Link href="/auth/forgot-password" className="text-sm">
+          <Link href="/auth/forgot-password" className="text-sm !underline">
             Can't sign in?
           </Link>
         </p>

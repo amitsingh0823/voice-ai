@@ -30,19 +30,19 @@ import type {
   ReactFlowInstance,
   SelectionDragHandler,
 } from 'reactflow';
-import { Helmet } from '@/app/components/helmet';
-import { ConfigPrompt } from '@/app/components/configuration/config-prompt';
-import { FormLabel } from '@/app/components/form-label';
-import { TagInput } from '@/app/components/form/tag-input';
-import { AssistantTag } from '@/app/components/form/tag-input/assistant-tags';
-import { CornerBorderOverlay } from '@/app/components/base/corner-border';
-import { PrimaryButton, SecondaryButton } from '@/app/components/carbon/button';
+import { Helmet } from '@/app/components/app-shell/helmet';
+import { ConfigPrompt } from '@/app/components/domain/configuration/config-prompt';
+import { FormLabel } from '@/app/components/ui/primitives';
+import { TagInput } from '@/app/components/ui/composites';
+import { AssistantTag } from '@/app/components/domain/tags/assistant-tags';
+import { CornerBorderOverlay } from '@/app/components/ui/primitives';
+import { PrimaryButton, SecondaryButton } from '@/app/components/ui/primitives';
 import {
   Modal,
   ModalBody,
   ModalFooter,
   ModalHeader,
-} from '@/app/components/carbon/modal';
+} from '@/app/components/ui/primitives';
 import { ReactSortable } from 'react-sortablejs';
 import { useConfirmDialog } from '@/app/pages/assistant/actions/hooks/use-confirmation';
 import { useGlobalNavigation } from '@/hooks/use-global-navigator';
@@ -51,7 +51,7 @@ import {
   GetDefaultTextProviderConfigIfInvalid,
   GetDefaultTextProviderConfigOnProviderSwitch,
   TextProvider,
-} from '@/app/components/providers/text';
+} from '@/app/components/domain/providers/text';
 import {
   Button,
   Checkbox,
@@ -2492,14 +2492,6 @@ const getNodeHeight = (type: AgentflowNodeType) => {
     return GENERIC_NODE_HEADER_HEIGHT;
   }
 
-  if (type === 'chat-output') {
-    return (
-      GENERIC_NODE_HEADER_HEIGHT +
-      connectorCount * GENERIC_NODE_CONNECTION_ROW_HEIGHT +
-      GENERIC_NODE_BOTTOM_PADDING
-    );
-  }
-
   return (
     GENERIC_NODE_HEADER_HEIGHT +
     GENERIC_NODE_SECTION_TOP +
@@ -2653,11 +2645,11 @@ const AgentflowCanvasNode = ({
   const cardClass = getNodeCardClass(selected, hasValidationError);
   const updateNodeInternals = useUpdateNodeInternals();
   const isActionGenericNode = isActionNodeType(node.type);
+  const isChatOutputNode = (node.type as AgentflowNodeType) === 'chat-output';
   const isAnnotationNode = isAnnotationNodeType(node.type);
-  const isCompactGenericNode =
-    isActionGenericNode || node.type === 'chat-output';
+  const isCompactGenericNode = isActionGenericNode || isChatOutputNode;
   const getGenericConnectorTop = (index: number) => {
-    if (isActionGenericNode || node.type === 'chat-output') {
+    if (isActionGenericNode || isChatOutputNode) {
       return GENERIC_NODE_HEADER_HEIGHT / 2;
     }
 
@@ -4331,7 +4323,7 @@ export function AgentflowBuilder({
                   ? 'Collapse components'
                   : 'Expand components'
               }
-              className="flex h-10 w-full cursor-pointer items-center px-4 text-gray-400 transition-colors duration-100 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-400"
+              className="flex h-10 w-full cursor-pointer items-center px-4 text-[var(--cds-text-secondary)] transition-colors duration-100 hover:bg-gray-100 hover:text-[var(--cds-text-primary)] dark:hover:bg-gray-800"
             >
               <span className="shrink-0">
                 {componentListLocked ? (
@@ -4408,6 +4400,7 @@ export function AgentflowBuilder({
             zoomOnPinch
             nodesDraggable={!canvasLocked}
             nodesConnectable
+            nodesFocusable={false}
             edgesUpdatable
             edgeUpdaterRadius={16}
             elementsSelectable

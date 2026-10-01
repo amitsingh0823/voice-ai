@@ -2,13 +2,13 @@ import {
   PrimaryButton,
   GhostButton,
   IconOnlyButton,
-} from '@/app/components/carbon/button';
-import { Dropdown } from '@/app/components/carbon/dropdown';
-import { Form, Stack, TextInput } from '@/app/components/carbon/form';
+} from '@/app/components/ui/primitives';
+import { Dropdown } from '@/app/components/ui/primitives';
+import { Form, Stack, TextInput } from '@/app/components/ui/primitives';
 import { ArrowLeft, PhoneOutgoing } from '@carbon/icons-react';
-import { Notification } from '@/app/components/carbon/notification';
-import { Tabs } from '@/app/components/carbon/tabs';
-import { Text } from '@/app/components/carbon/text';
+import { Notification } from '@/app/components/ui/feedback';
+import { Tabs } from '@/app/components/ui/primitives';
+import { Text } from '@/app/components/ui/primitives';
 import {
   ArgumentList,
   ConfigEmpty,
@@ -23,25 +23,24 @@ import {
   DEFAULT_COUNTRY,
   Country,
 } from '@/app/pages/preview-agent/voice-agent/phone-agent-constants';
-import { CONFIG } from '@/configs';
 import { useCurrentCredential } from '@/hooks/use-credential';
 import { randomMeaningfullName } from '@/utils';
 import { getStatusMetric } from '@/utils/metadata';
 import {
   AgentConfig,
   Channel,
-  ConnectionConfig,
   InputOptions,
   StringToAny,
-  CreatePhoneCall,
-  AssistantDefinition,
-  CreatePhoneCallRequest,
   Assistant,
-  GetAssistant,
-  GetAssistantRequest,
   Variable,
 } from '@rapidaai/react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getAssistantByIdWithApi } from '@/clients/assistant.client';
+import {
+  createPreviewPhoneCall,
+  createVoiceAgentDebuggerConnection,
+  createVoiceAgentSDKConnection,
+} from '@/clients/runtime.client';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 
 /**
@@ -61,12 +60,10 @@ export const PublicPreviewVoiceAgent = () => {
   return (
     <VoiceAgent
       debug={false}
-      connectConfig={ConnectionConfig.DefaultConnectionConfig(
-        ConnectionConfig.WithSDK({
-          ApiKey: token,
-          UserId: '' + (authId || 'public_user'),
-        }),
-      ).withCustomEndpoint(CONFIG.connection)}
+      connectConfig={createVoiceAgentSDKConnection({
+        apiKey: token,
+        userId: '' + (authId || 'public_user'),
+      })}
       agentConfig={new AgentConfig(
         assistantId,
         new InputOptions([Channel.Audio, Channel.Text], Channel.Text),
@@ -89,13 +86,11 @@ export const PreviewVoiceAgent = () => {
   return (
     <VoiceAgent
       debug={true}
-      connectConfig={ConnectionConfig.DefaultConnectionConfig(
-        ConnectionConfig.WithDebugger({
-          authorization: token,
-          userId: authId,
-          projectId: projectId,
-        }),
-      ).withCustomEndpoint(CONFIG.connection)}
+      connectConfig={createVoiceAgentDebuggerConnection({
+        token,
+        userId: authId,
+        projectId,
+      })}
       agentConfig={new AgentConfig(
         assistantId,
         new InputOptions([Channel.Audio, Channel.Text], Channel.Text),
@@ -123,17 +118,6 @@ const PHONE_DEBUG_TAB_LABELS = ['Configuration', 'Arguments'];
 //
 export const PreviewPhoneAgent = () => {
   const { authId, token, projectId } = useCurrentCredential();
-  const connectionCfg = useMemo(
-    () =>
-      ConnectionConfig.DefaultConnectionConfig(
-        ConnectionConfig.WithPersonalToken({
-          Authorization: token,
-          AuthId: authId,
-          ProjectId: projectId,
-        }),
-      ).withCustomEndpoint(CONFIG.connection),
-    [authId, projectId, token],
-  );
 
   const { assistantId } = useParams();
   const [assistant, setAssistant] = useState<Assistant | null>(null);
@@ -162,11 +146,14 @@ export const PreviewPhoneAgent = () => {
     setArgumentMap(new Map());
     setErrorMessage('');
 
-    const request = new GetAssistantRequest();
-    const assistantDef = new AssistantDefinition();
-    assistantDef.setAssistantid(assistantId);
-    request.setAssistantdefinition(assistantDef);
-    GetAssistant(connectionCfg, request)
+    getAssistantByIdWithApi({
+      assistantId,
+      auth: {
+        token,
+        projectId,
+        userId: authId,
+      },
+    })
       .then(response => {
         if (!isMounted) return;
         if (response?.getSuccess()) {
@@ -197,7 +184,7 @@ export const PreviewPhoneAgent = () => {
     return () => {
       isMounted = false;
     };
-  }, [assistantId, connectionCfg]);
+  }, [assistantId, authId, projectId, token]);
 
   if (!assistantId) {
     return <Navigate to="/404" replace />;
@@ -223,17 +210,16 @@ export const PreviewPhoneAgent = () => {
     setErrorMessage('');
     setCallStatus('calling');
 
-    const phoneCallRequest = new CreatePhoneCallRequest();
-    const assistantDef = new AssistantDefinition();
-    assistantDef.setAssistantid(assistantId);
-    assistantDef.setVersion('latest');
-    phoneCallRequest.setAssistant(assistantDef);
-    argumentMap.forEach((value, key) => {
-      phoneCallRequest.getArgsMap().set(key, StringToAny(value));
-    });
-    phoneCallRequest.setTonumber(country.value + phoneNumber);
-
-    CreatePhoneCall(connectionCfg, phoneCallRequest)
+    createPreviewPhoneCall({
+      assistantId,
+      toNumber: country.value + phoneNumber,
+      args: argumentMap,
+      auth: {
+        token,
+        userId: authId,
+        projectId,
+      },
+    })
       .then(x => {
         if (x.getSuccess()) {
           const status = getStatusMetric(x.getData()?.getMetricsList());

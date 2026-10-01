@@ -1,9 +1,9 @@
 import React, { FC, useState } from 'react';
 import { useConfirmDialog } from '@/app/pages/assistant/actions/hooks/use-confirmation';
 import { useGlobalNavigation } from '@/hooks/use-global-navigator';
-import { PrimaryButton, SecondaryButton } from '@/app/components/carbon/button';
-import { TextInput, TextArea, Stack } from '@/app/components/carbon/form';
-import { InputGroup } from '@/app/components/input-group';
+import { PrimaryButton, SecondaryButton } from '@/app/components/ui/primitives';
+import { TextInput, TextArea, Stack } from '@/app/components/ui/primitives';
+import { InputGroup } from '@/app/components/ui/primitives';
 import {
   ButtonSet,
   Select as CarbonSelect,
@@ -13,20 +13,16 @@ import {
   Tooltip,
 } from '@carbon/react';
 import { Information } from '@carbon/icons-react';
-import { Slider } from '@/app/components/form/slider';
-import { APiHeader } from '@/app/components/external-api/api-header';
-import {
-  CreateAssistantConfiguration,
-  CreateAssistantConfigurationRequest,
-  Metadata,
-} from '@rapidaai/react';
+import { Slider } from '@/app/components/ui/primitives';
+import { APiHeader } from '@/app/components/domain/external-api/api-header';
+import { Metadata } from '@rapidaai/react';
 import { useCurrentCredential } from '@/hooks/use-credential';
 import toast from 'react-hot-toast/headless';
-import { useRapidaStore } from '@/hooks';
-import { connectionConfig } from '@/configs';
-import { TabForm } from '@/app/components/form/tab-form';
+import { useRapidaStore } from '@/stores/app';
+import { TabForm } from '@/app/components/ui/composites';
 import { WebhookEventSelector } from './webhook-event-selector';
 import { WebhookEventGroup, webhookEvents } from './webhook-events';
+import { createAssistantConfigurationForAssistant } from '@/clients/assistant.client';
 
 const renderLabelWithTooltip = (label: string, tooltip: string) => (
   <span className="inline-flex items-center gap-1">
@@ -185,35 +181,27 @@ export const CreateAssistantWebhook: FC<{ assistantId: string }> = ({
       return;
     }
     showLoader();
-    const request = new CreateAssistantConfigurationRequest();
-    request.setAssistantid(assistantId);
-    request.setConfigurationtype(webhookConfigurationType);
-    request.setProvider('http');
-    request.setEnabled(true);
-    request.setOptionsList(
-      buildWebhookOptions({
-        method,
-        endpoint,
-        headers,
-        retryOnStatus,
-        maxRetries,
-        requestTimeout,
-        priority,
-        events,
-        description,
-      }),
-    );
+    const options = buildWebhookOptions({
+      method,
+      endpoint,
+      headers,
+      retryOnStatus,
+      maxRetries,
+      requestTimeout,
+      priority,
+      events,
+      description,
+    });
 
     try {
-      const response = await CreateAssistantConfiguration(
-        connectionConfig,
-        request,
-        {
-          'x-auth-id': authId,
-          authorization: token,
-          'x-project-id': projectId,
-        },
-      );
+      const response = await createAssistantConfigurationForAssistant({
+        assistantId,
+        configurationType: webhookConfigurationType,
+        provider: 'http',
+        enabled: true,
+        options,
+        auth: { projectId, token, userId: authId },
+      });
 
       hideLoader();
       if (response?.getSuccess()) {

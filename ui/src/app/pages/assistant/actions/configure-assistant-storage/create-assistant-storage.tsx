@@ -1,16 +1,11 @@
 import React, { FC, useState } from 'react';
-import {
-  CreateAssistantConfiguration,
-  CreateAssistantConfigurationRequest,
-  Metadata,
-} from '@rapidaai/react';
+import { Metadata } from '@rapidaai/react';
 import { useGlobalNavigation } from '@/hooks/use-global-navigator';
 import { useCurrentCredential } from '@/hooks/use-credential';
-import { useRapidaStore } from '@/hooks';
-import { connectionConfig } from '@/configs';
+import { useRapidaStore } from '@/stores/app';
 import toast from 'react-hot-toast/headless';
-import { PrimaryButton, SecondaryButton } from '@/app/components/carbon/button';
-import { Stack } from '@/app/components/carbon/form';
+import { PrimaryButton, SecondaryButton } from '@/app/components/ui/primitives';
+import { Stack } from '@/app/components/ui/primitives';
 import { ButtonSet } from '@carbon/react';
 import { useConfirmDialog } from '@/app/pages/assistant/actions/hooks/use-confirmation';
 import {
@@ -21,10 +16,11 @@ import {
   StorageFileSelector,
   upsertStorageFilesOption,
   ValidateStorageOptions,
-} from '@/app/components/providers/storage';
+} from '@/app/components/domain/providers/storage';
 import { STORAGE_PROVIDER } from '@/providers';
-import { InputGroup } from '@/app/components/input-group';
-import { Notification } from '@/app/components/carbon/notification';
+import { InputGroup } from '@/app/components/ui/primitives';
+import { Notification } from '@/app/components/ui/feedback';
+import { createAssistantConfigurationForAssistant } from '@/clients/assistant.client';
 
 const storageConfigurationType = 'storage';
 
@@ -72,18 +68,14 @@ export const CreateAssistantStorage: FC<{ assistantId: string }> = ({
       return;
     }
 
-    const request = new CreateAssistantConfigurationRequest();
-    request.setAssistantid(assistantId);
-    request.setConfigurationtype(storageConfigurationType);
-    request.setProvider(provider);
-    request.setEnabled(true);
-    request.setOptionsList(upsertStorageFilesOption(parameters, selectedFiles));
-
     showLoader();
-    CreateAssistantConfiguration(connectionConfig, request, {
-      'x-auth-id': authId,
-      authorization: token,
-      'x-project-id': projectId,
+    createAssistantConfigurationForAssistant({
+      assistantId,
+      configurationType: storageConfigurationType,
+      provider,
+      enabled: true,
+      options: upsertStorageFilesOption(parameters, selectedFiles),
+      auth: { projectId, token, userId: authId },
     })
       .then(response => {
         hideLoader();

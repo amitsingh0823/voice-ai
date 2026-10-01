@@ -1,19 +1,18 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { Helmet } from '@/app/components/helmet';
+import { Helmet } from '@/app/components/app-shell/helmet';
 import {
   ArchiveProjectResponse,
   GetAllProjectResponse,
   Project,
+  ServiceError,
 } from '@rapidaai/react';
-import { CreateProjectDialog } from '@/app/components/base/modal/create-project-modal';
-import { GetAllProject, DeleteProject } from '@rapidaai/react';
+import { CreateProjectDialog } from '@/app/components/dialogs/workspace';
 import { useCredential } from '@/hooks/use-credential';
 import toast from 'react-hot-toast/headless';
-import { useRapidaStore } from '@/hooks';
-import { ServiceError } from '@rapidaai/react';
-import { PrimaryButton } from '@/app/components/carbon/button';
-import { Pagination } from '@/app/components/carbon/pagination';
-import { Add, Edit, Renew, TrashCan } from '@carbon/icons-react';
+import { useRapidaStore } from '@/stores/app';
+import { PrimaryButton } from '@/app/components/ui/primitives';
+import { Pagination } from '@/app/components/ui/primitives';
+import { Add, Edit, Folders, Renew, TrashCan } from '@carbon/icons-react';
 import {
   Table,
   TableHead,
@@ -29,17 +28,18 @@ import {
   Button,
   RadioButton,
 } from '@carbon/react';
-import { ProjectUserGroupAvatar } from '@/app/components/avatar/project-user-group-avatar';
+import { ProjectUserGroupAvatar } from '@/app/components/domain/avatar/project-user-group-avatar';
 import { toHumanReadableDate } from '@/utils/date';
-import { RoleIndicator } from '@/app/components/indicators/role';
-import { PageHeaderBlock } from '@/app/components/blocks/page-header-block';
-import { PageTitleWithCount } from '@/app/components/blocks/page-title-with-count';
-import { TableSection } from '@/app/components/sections/table-section';
-import { connectionConfig } from '@/configs';
-import { ConfirmDeleteDialog } from '@/app/components/base/modal/confirm-delete';
+import { RoleIndicator } from '@/app/components/domain/indicators/role';
+import { PageHeaderBlock } from '@/app/components/layout/blocks/page-header-block';
+import { PageTitleWithCount } from '@/app/components/layout/blocks/page-title-with-count';
+import { TableSection } from '@/app/components/layout/sections/table-section';
+import { ConfirmDeleteDialog } from '@/app/components/dialogs/shared';
 import { AuthContext } from '@/context/auth-context';
-import { UpdateProjectDialog } from '@/app/components/base/modal/update-project-modal';
-import { CarbonIconIndicator } from '@/app/components/carbon/icon-indicator';
+import { UpdateProjectDialog } from '@/app/components/dialogs/workspace';
+import { CarbonIconIndicator } from '@/app/components/ui/feedback';
+import { deleteWorkspaceProject, listWorkspaceProjects } from '@/clients';
+import { EmptyState } from '@/app/components/ui/feedback';
 
 const headers = [
   { key: 'name', header: 'Name' },
@@ -82,7 +82,12 @@ export function ProjectPage() {
         if (paginated) {
           setTotalCount(paginated.getTotalitem());
         }
+        return;
       }
+      toast.error(
+        alpr?.getError()?.getHumanmessage() ||
+          'Unable to process your request. please try again later.',
+      );
     },
     [],
   );
@@ -93,17 +98,13 @@ export function ProjectPage() {
     criteria: { key: string; value: string }[],
   ) => {
     showLoader();
-    return GetAllProject(
-      connectionConfig,
+    return listWorkspaceProjects({
       page,
       pageSize,
       criteria,
-      afterGettingProject,
-      {
-        authorization: token,
-        'x-auth-id': userId,
-      },
-    );
+      auth: { token, userId },
+      callback: afterGettingProject,
+    });
   };
 
   useEffect(() => {
@@ -111,10 +112,13 @@ export function ProjectPage() {
   }, [page, pageSize, criteria]);
 
   const onDeleteProject = (projectId: string) => {
-    DeleteProject(
-      connectionConfig,
+    deleteWorkspaceProject({
       projectId,
-      (err: ServiceError | null, apr: ArchiveProjectResponse | null) => {
+      auth: { token, userId },
+      callback: (
+        err: ServiceError | null,
+        apr: ArchiveProjectResponse | null,
+      ) => {
         if (err) {
           setProjectPendingDelete(null);
           return;
@@ -126,11 +130,7 @@ export function ProjectPage() {
           setSelectedProjectId(null);
         }
       },
-      {
-        authorization: token,
-        'x-auth-id': userId,
-      },
-    );
+    });
   };
 
   return (
@@ -190,88 +190,99 @@ export function ProjectPage() {
           </PrimaryButton>
         </TableToolbarContent>
       </TableToolbar>
-      <TableSection>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeader className="!w-12" />
-              {headers.map(h => (
-                <TableHeader key={h.key}>{h.header}</TableHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {projects.map(project => (
-              <TableRow
-                key={project.getId()}
-                isSelected={selectedProjectId === project.getId()}
-                onClick={() =>
-                  setSelectedProjectId(
-                    selectedProjectId === project.getId()
-                      ? null
-                      : project.getId(),
-                  )
-                }
-                className="cursor-pointer"
-              >
-                <TableCell
-                  className="!w-12 !pr-0"
-                  onClick={e => e.stopPropagation()}
-                >
-                  <RadioButton
-                    id={`project-select-${project.getId()}`}
-                    name="project-select"
-                    labelText=""
-                    hideLabel
-                    checked={selectedProjectId === project.getId()}
-                    onChange={() =>
-                      setSelectedProjectId(
-                        selectedProjectId === project.getId()
-                          ? null
-                          : project.getId(),
-                      )
-                    }
-                  />
-                </TableCell>
-                <TableCell>{project.getName()}</TableCell>
-                <TableCell>
-                  {project.getCreateddate() &&
-                    toHumanReadableDate(project.getCreateddate()!)}
-                </TableCell>
-                <TableCell>
-                  <RoleIndicator
-                    role={
-                      projectRoles?.find(p => p.projectid === project.getId())
-                        ?.role
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <ProjectUserGroupAvatar
-                    members={project
-                      .getMembersList()
-                      .map(m => ({ name: m.getName() }))}
-                    size={7}
-                  />
-                </TableCell>
-                <TableCell>
-                  <CarbonIconIndicator state={project.getStatus?.()} />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <Pagination
-          totalItems={totalCount}
-          page={page}
-          pageSize={pageSize}
-          pageSizes={[10, 20, 50]}
-          onChange={({ page: newPage, pageSize: newSize }) => {
-            setPage(newPage);
-            setPageSize(newSize);
-          }}
+      {!loading && projects.length === 0 ? (
+        <EmptyState
+          icon={Folders}
+          title="No projects"
+          subtitle="Create a project to organize assistants, endpoints, credentials, and collaborators."
+          action="Create new project"
+          actionIcon={Add}
+          onAction={() => setCreateProjectModalOpen(true)}
         />
-      </TableSection>
+      ) : (
+        <TableSection>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeader className="!w-12" />
+                {headers.map(h => (
+                  <TableHeader key={h.key}>{h.header}</TableHeader>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {projects.map(project => (
+                <TableRow
+                  key={project.getId()}
+                  isSelected={selectedProjectId === project.getId()}
+                  onClick={() =>
+                    setSelectedProjectId(
+                      selectedProjectId === project.getId()
+                        ? null
+                        : project.getId(),
+                    )
+                  }
+                  className="cursor-pointer"
+                >
+                  <TableCell
+                    className="!w-12 !pr-0"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <RadioButton
+                      id={`project-select-${project.getId()}`}
+                      name="project-select"
+                      labelText=""
+                      hideLabel
+                      checked={selectedProjectId === project.getId()}
+                      onChange={() =>
+                        setSelectedProjectId(
+                          selectedProjectId === project.getId()
+                            ? null
+                            : project.getId(),
+                        )
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>{project.getName()}</TableCell>
+                  <TableCell>
+                    {project.getCreateddate() &&
+                      toHumanReadableDate(project.getCreateddate()!)}
+                  </TableCell>
+                  <TableCell>
+                    <RoleIndicator
+                      role={
+                        projectRoles?.find(p => p.projectid === project.getId())
+                          ?.role
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <ProjectUserGroupAvatar
+                      members={project
+                        .getMembersList()
+                        .map(m => ({ name: m.getName() }))}
+                      size={7}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <CarbonIconIndicator state={project.getStatus?.()} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Pagination
+            totalItems={totalCount}
+            page={page}
+            pageSize={pageSize}
+            pageSizes={[10, 20, 50]}
+            onChange={({ page: newPage, pageSize: newSize }) => {
+              setPage(newPage);
+              setPageSize(newSize);
+            }}
+          />
+        </TableSection>
+      )}
       <CreateProjectDialog
         modalOpen={createProjectModalOpen}
         setModalOpen={setCreateProjectModalOpen}

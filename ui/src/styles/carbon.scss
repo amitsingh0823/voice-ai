@@ -174,10 +174,14 @@
   --cds-button-primary: var(--brand-primary);
   --cds-button-primary-hover: var(--brand-primary-hover);
   --cds-button-primary-active: var(--brand-primary-active);
-  --cds-text-on-color: var(--brand-on-primary);
+  --cds-text-on-color: #ffffff;
   --cds-button-tertiary: var(--brand-primary);
   --cds-button-tertiary-hover: var(--brand-primary-hover);
   --cds-button-tertiary-active: var(--brand-primary-active);
+}
+
+.cds--btn--primary {
+  color: var(--brand-on-primary);
 }
 
 // ─── Scoped inverse theme zone ───────────────────────────────────────────────
@@ -285,6 +289,62 @@
 
   .cds--list-box--expanded .cds--list-box__field {
     border-bottom: 2px solid var(--cds-border-interactive);
+  }
+}
+
+.text-provider-combo-row,
+.domain-connected-dropdown-row {
+  .cds--dropdown,
+  .cds--list-box,
+  .cds--list-box__field {
+    border: none;
+    background-color: transparent;
+  }
+
+  .cds--list-box__field {
+    height: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .cds--list-box--expanded .cds--list-box__field {
+    border: none;
+  }
+
+  .cds--btn {
+    border: none;
+  }
+}
+
+.domain-connected-dropdown-row {
+  min-block-size: 2.5rem;
+
+  .cds--list-box__wrapper,
+  .cds--list-box {
+    min-inline-size: 0;
+  }
+
+  .cds--btn.domain-connected-dropdown-action {
+    block-size: 2.5rem;
+    inline-size: 2.5rem;
+    min-block-size: 2.5rem;
+    min-inline-size: 2.5rem;
+    padding: 0;
+    border-inline-start: 1px solid var(--cds-border-subtle);
+    background-color: transparent;
+    color: var(--cds-icon-primary);
+  }
+
+  .cds--btn.domain-connected-dropdown-action:hover {
+    background-color: var(--cds-background-hover);
+  }
+
+  .cds--btn.domain-connected-dropdown-action:disabled {
+    background-color: transparent;
+    color: var(--cds-icon-disabled);
+  }
+
+  .cds--btn.domain-connected-dropdown-action::before {
+    display: none;
   }
 }
 

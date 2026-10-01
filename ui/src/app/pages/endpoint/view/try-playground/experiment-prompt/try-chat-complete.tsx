@@ -1,13 +1,6 @@
-import {
-  ConnectionConfig,
-  EndpointDefinition,
-  Invoke,
-  InvokeRequest,
-  StringToAny,
-} from '@rapidaai/react';
 import { Endpoint, EndpointProviderModel } from '@rapidaai/react';
 import { InvokeResponse } from '@rapidaai/react';
-import { useRapidaStore } from '@/hooks';
+import { useRapidaStore } from '@/stores/app';
 import { useCredential } from '@/hooks/use-credential';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -21,7 +14,8 @@ import {
 
 import { OutputMessage } from '@/app/pages/endpoint/view/try-playground/experiment-prompt/components/output-message';
 import { PlaygroundHeader } from '@/app/pages/endpoint/view/try-playground/experiment-prompt/components/playground-header';
-import { connectionConfig } from '@/configs';
+import { invokeEndpoint } from '@/clients';
+import { InlineNotification } from '@carbon/react';
 
 export function TryChatComplete(props: {
   currentEndpoint: Endpoint;
@@ -93,25 +87,16 @@ export function TryChatComplete(props: {
     setCallerResponse(null);
 
     const formDataMap = await InputFormData(data);
-    const request = new InvokeRequest();
-    const endpoint = new EndpointDefinition();
-    endpoint.setEndpointid(props.endpointProviderModel.getEndpointid());
-    endpoint.setVersion(props.endpointProviderModel.getId());
-    request.setEndpoint(endpoint);
-    request.getMetadataMap().set('source', StringToAny('web-app'));
-    request.getMetadataMap().set('experiemental', StringToAny('true'));
-    formDataMap.forEach((value, key) => {
-      request.getArgsMap().set(key, value);
-    });
-    Invoke(
-      connectionConfig,
-      request,
-      ConnectionConfig.WithDebugger({
-        authorization: token,
-        userId: userId,
-        projectId: projectId,
-      }),
-    )
+    invokeEndpoint({
+      endpointId: props.endpointProviderModel.getEndpointid(),
+      endpointProviderModelId: props.endpointProviderModel.getId(),
+      args: formDataMap,
+      auth: {
+        userId,
+        token,
+        projectId,
+      },
+    })
       .then(at => {
         hideLoader();
         if (at?.getSuccess()) {
@@ -132,40 +117,68 @@ export function TryChatComplete(props: {
   };
 
   return (
-    <form onSubmit={handleSubmit(onInvoke)} className="flex flex-col flex-1">
+    <form
+      onSubmit={handleSubmit(onInvoke)}
+      className="flex min-h-0 flex-1 flex-col bg-[var(--cds-background)]"
+    >
       <PlaygroundHeader
         isValid={isValid}
         loading={loading}
         disabled={hasUnsupportedVariables}
-        variableCount={variables.length}
-        unsupportedCount={unsupportedVariables.length}
       />
-      <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950">
-        <div className="grid h-full grid-rows-[minmax(0,1fr)_minmax(18rem,42%)] overflow-hidden">
-          <div className="overflow-y-auto border-b border-gray-200 dark:border-gray-800">
-            <div className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+      <div className="min-h-0 flex-1 overflow-auto bg-[var(--cds-background)]">
+        <div
+          className="grid min-h-full w-full lg:grid-cols-[minmax(18rem,2fr)_minmax(0,3fr)]"
+          data-testid="endpoint-playground-console"
+        >
+          <section
+            className="flex min-h-0 flex-col border-b border-[var(--cds-border-subtle-01)] bg-[var(--cds-layer-01)] lg:border-b-0 lg:border-r"
+            aria-labelledby="playground-arguments-title"
+          >
+            <div className="border-b border-[var(--cds-border-subtle-01)] bg-[var(--cds-layer-02)] px-4 py-3">
+              <h2
+                id="playground-arguments-title"
+                className="text-sm font-semibold text-[var(--cds-text-primary)]"
+              >
                 Arguments
-              </p>
+              </h2>
             </div>
-            <EndpointArgumentList
-              variables={variables}
-              getRegistration={variable =>
-                register(variable.getName(), {
-                  required: 'Please provide a valid input.',
-                })
-              }
-              getErrorMessage={variable =>
-                errors[variable.getName()]?.message?.toString()
-              }
-            />
-          </div>
+            <div
+              aria-label="Endpoint arguments"
+              className="min-h-0 flex-1 overflow-y-auto"
+              tabIndex={0}
+            >
+              {variables.length > 0 ? (
+                <EndpointArgumentList
+                  variables={variables}
+                  getRegistration={variable =>
+                    register(variable.getName(), {
+                      required: 'Please provide a valid input.',
+                    })
+                  }
+                  getErrorMessage={variable =>
+                    errors[variable.getName()]?.message?.toString()
+                  }
+                />
+              ) : (
+                <InlineNotification
+                  kind="info"
+                  lowContrast
+                  hideCloseButton
+                  title="No arguments required"
+                  subtitle="Run this endpoint directly to inspect its response."
+                  className="m-4! max-w-full!"
+                />
+              )}
+            </div>
+          </section>
           <OutputMessage
             callerResponse={callerResponse}
             error={error}
             loading={loading}
             isValid={isValid}
             errors={errors}
+            className="min-h-[28rem]"
           />
         </div>
       </div>
